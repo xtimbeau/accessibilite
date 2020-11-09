@@ -35,6 +35,9 @@ iso_accessibilite <- function(
   # logfile <- function() stringr::str_c(logfile_s,future:::session_uuid()[[1]],".log")
   log_appender(appender_file(logfile))
   
+  k <- if(!is.null(routing$n_threads)) routing$n_threads else 1
+  chunk <- chunk*k
+  
   log_info("Calcul accessibilité version 2")
   log_info("{capture.output(show(routing))}")
   log_info("")
@@ -74,7 +77,7 @@ iso_accessibilite <- function(
   npaires_brut <- as.numeric(nrow(quoi_4326))*as.numeric(nrow(ou_4326))
   
   # établit les paquets (sur une grille)
-  
+
   groupes <- iso_split_ou(
     ou=ou_4326, 
     quoi=quoi_4326,
@@ -94,8 +97,6 @@ iso_accessibilite <- function(
   else 
     map_fun <- purrr::map
   
-  k <- if(!is.null(routing$n_threads)) routing$n_threads else 1
-  
   with_progress({
     pb <- progressor(steps=length(ou_gr))
     access <- 
@@ -104,7 +105,7 @@ iso_accessibilite <- function(
           ou_gr, 
           function(groupe) {
             pb()
-            logger::log_appender(appender_file(logfile))
+            if(routing$future&future) logger::log_appender(appender_file(logfile))
             access_on_groupe(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out)
           }
         )
@@ -324,7 +325,7 @@ iso_split_ou <- function(ou, quoi, chunk, mode="CAR", tmax=60)
   mquoi <- quoi[, .(x,y)] %>% as.matrix
   nquoi <- median(rowSums2(rdist::cdist(mou, mquoi) <= vmaxmode(mode)*tmax))
 
-  size <- as.numeric(nrow(quoi))*as.numeric(nquoi)
+  size <- as.numeric(nrow(ou))*as.numeric(nquoi)
   bbox <- matrix(c(xmax=max(ou$lon), xmin=min(ou$lon), ymax=max(ou$lat), ymin= min(ou$lat)), nrow=2)
   bbox <- sf_project(pts=bbox, from=st_crs(4326), to=st_crs(3035))
   surf <- (bbox[1,1]-bbox[2,1])*(bbox[1,2]-bbox[2,2])
@@ -361,7 +362,7 @@ t_prudence <- function(routing, cell=1600)
 vmaxmode <- function(mode)
 {
   vitesse <- case_when(
-    "TRANSIT"%in%mode ~ 80/60*1000,
+    "TRANSIT"%in%mode ~ 40/60*1000,
     "CAR"%in%mode ~ 80/60*1000,
     "BIKE"%in%mode ~ 12/60*1000,
     "WALK"%in%mode ~ 5/60*1000,
@@ -507,7 +508,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           paires_fromId <- ttm[, .(npep=npep[[1]], npea=npea[[1]]), by=fromId]
           npea <- sum(paires_fromId$npea)
           npep <- sum(paires_fromId$npep)
-          speed_log <-str_c(length(pproches), "paquets ", f2si2(npea),"@",f2si2(npea/dtime),"p/s demandees, ",f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
+          speed_log <-str_c(length(pproches), " paquets ", f2si2(npea),"@",f2si2(npea/dtime),"p/s demandees, ",f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
         
           if(!ttm_out)
           {         

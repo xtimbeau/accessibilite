@@ -8,28 +8,30 @@
   
   # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
   rha <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(5000) %>% st_union
-  UU758 <- iris15 %>% filter(UU2010=="00758") %>% st_union
-  iris15_rha <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,rha, sparse=FALSE))
+  uu758 <- iris15 %>% filter(UU2010=="00758") %>% st_union
+  iris15_rha <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,rha, sparse=FALSE)) %>% st_centroid()
   
   # carreaux sélectionnés pour le calcul de la grille
   # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
   # par construction le nombre de ménages par carreau est supérieur à 10
   
   c200 <- load_DVF("c200") 
-  c200_758 <- c200 %>% filter(st_within(., UU758, sparse=FALSE)) # Paris
+  c200_758 <- c200 %>% filter(st_within(., uu758, sparse=FALSE))
+  
   rm(c200, iris15)
+  
   # Moteur r5, en voiture ou en transit
   # attention la voiture est lente, surout pour des temps importants
   
-  car_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5" %>% glue, mode="CAR")
+  car_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode="CAR")
   tr_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode=c("WALK", "TRANSIT"))
   
-  iso_transit_50_r5_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
-                                         ou=c200_758,# la grille cible (plus long sur c200 que sur c200_mt)
-                                         resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
-                                         tmax=60, # le temps max des isochrones en minutes
-                                         pdt=5, # le pas de temps pour retourner le résultat en minute
-                                         routing=tr_r5_Lyon) # moteur de routing
+  iso_transit_50_r5_Lyon <- iso_accessibilite(quoi=iris15_rha,
+                                         ou=c200_758,
+                                         resolution=50,
+                                         tmax=60, 
+                                         pdt=5, 
+                                         routing=tr_r5_Lyon) 
   
   save_DVF(iso_transit_50_r5_Lyon)
   
