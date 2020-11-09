@@ -1,15 +1,13 @@
 source("dvf.r")
-
-#Construction cpaca & daca
-
 cfr <- st_read("{DVFdata}/communes/communes.shp" %>% glue, stringsAsFactors=FALSE)
 st_crs(cfr) <- 2154 #projection lambert 93 standard
 cfr <- st_transform(cfr, 2154)
 names(cfr)[1]<-"insee"
 cfr %<>% mutate(DEP = str_sub(cfr$insee,1,2))
-depRa <- c("42","69","01","38","26","07")
-crha <- cfr %>% filter(DEP %in% depRa)
+c200_rha <- load_DVF("c200_rha")
+crha <- cfr %>% filter(DEP %in% c200_rha)
 drha <- crha %>% group_by(DEP) %>% summarize()
+
 
 save_DVF(drha)
 save_DVF(crha)
@@ -62,6 +60,11 @@ st_crs(rhaplus) <- st_crs("+proj=longlat +ellps=WGS84")
 
 rha.mbr <- cc_location(loc=rhaplus, zoom = 9,
                         base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+
+maxs <- cellStats(rha.mbr, max)
+rha.mbr <- projectRaster(from=rha.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
+rha.mbr <- rha.mbr/cellStats(rha.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
+
 
 # Mise à l'échelle du fond de carte
 

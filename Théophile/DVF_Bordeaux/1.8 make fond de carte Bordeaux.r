@@ -55,7 +55,7 @@ style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
 Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-nrdcalplus <- iris15 %>% filter(UU2010=="33701") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+aquiplus <- iris15 %>% filter(UU2010=="33701") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
 st_crs(aquiplus) <- st_crs("+proj=longlat +ellps=WGS84")
 
 aqui.mbr <- cc_location(loc=aquiplus, zoom = 9,

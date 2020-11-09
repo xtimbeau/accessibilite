@@ -25,7 +25,7 @@ car_r5_Strasbourg <- routing_setup_r5(path="{DVFdata}/r5r_data/Strasbourg/r5" %>
 tr_r5_Strasbourg <- routing_setup_r5(path="{DVFdata}/r5r_data/Strasbourg/r5" %>% glue, mode=c("WALK", "TRANSIT"),
                                      time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
 
-iso_transit_50_r5_Strasbourg <- iso_accessibilite2(quoi=iris15_als, # les variables d'opportunité
+iso_transit_50_r5_Strasbourg <- iso_accessibilite(quoi=iris15_als, # les variables d'opportunité
                                        ou=c200_als, # la grille cible (plus long sur c200 que sur c200_mt)
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=60, # le temps max des isochrones en minutes
@@ -46,7 +46,7 @@ tm_shape(iso_transit_50_r5_Strasbourg$EMP09)+tm_raster(style="cont", palette=hea
 car_osrm_Strasbourg <- routing_setup_osrm(server="5002", profile="driving")
 foot_osrm_Strasbourg <- routing_setup_osrm(server="5001", profile="walk")
 
-iso_car_50_osrm_Strasbourg <- iso_accessibilite2(quoi=iris15_als, # les variables d'opportunité
+iso_car_50_osrm_Strasbourg <- iso_accessibilite(quoi=iris15_als, # les variables d'opportunité
                                        ou=c200_als, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=60, # le temps max des isochrones en minutes
@@ -57,7 +57,7 @@ save_DVF(iso_car_50_osrm_Strasbourg)
 
 tm_shape(iso_car_50_osrm_Strasbourg$EMP09)+tm_raster(style="cont", palette=heatrg)
 
-iso_foot_50_osrm_Strasbourg <- iso_accessibilite2(quoi=iris15_als, # les variables d'opportunité
+iso_foot_50_osrm_Strasbourg <- iso_accessibilite(quoi=iris15_als, # les variables d'opportunité
                                      ou=c200_als, # la grille cible
                                      resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                      tmax=15, # le temps max des isochrones en minutes

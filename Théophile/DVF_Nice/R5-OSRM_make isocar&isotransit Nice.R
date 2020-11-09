@@ -2,6 +2,7 @@ source("dvf.r")
 
 # utile pour OSRM
 plan("multiprocess", workers=8)
+plan(multisession, workers=8)
 
 # source des données d'opportunité
 iris15 <- load_DVF("iris15")
@@ -15,10 +16,8 @@ iris15_paca_nice <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,pac
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
 
-c200Paca <- load_DVF("c200Paca") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
-c200_paca_nice <- c200Paca %>% filter(st_within(., paca_nice, sparse=FALSE)) # Montreuil
-
-
+c200Nice_Paca <- load_DVF("c200Nice_Paca") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
+c200_paca_nice <- c200Nice_Paca %>% filter(st_within(., paca_nice, sparse=FALSE)) # Montreuil
 
 # Moteur r5, en voiture ou en transit
 # attention la voiture est lente, surout pour des temps importants
@@ -51,7 +50,7 @@ foot_osrm_Nice <- routing_setup_osrm(server="5001", profile="walk")
 iso_car_50_osrm_Nice <- iso_accessibilite2(quoi=iris15_paca_nice, # les variables d'opportunité
                                        ou=c200_paca_nice, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
-                                       tmax=60, # le temps max des isochrones en minutes
+                                       tmax=90, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute
                                        routing=car_osrm_Nice) # moteur de routing
 

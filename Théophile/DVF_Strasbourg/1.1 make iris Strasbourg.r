@@ -1,7 +1,7 @@
 source("dvf.r")
 
 # On fabrique les fichier cidf et iidf.sf ---------------------------------------
-depAls <- c("67","68")
+depAls <- c("67","68","57","54","88")
 
 # cartes des IRIS
 ifr <- st_read("{DVFdata}/parcelles/fr/CONTOURS-IRIS.shp" %>% glue, stringsAsFactors=FALSE)

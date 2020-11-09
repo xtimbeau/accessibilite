@@ -1,52 +1,77 @@
 source("dvf.r")
-uu851 <- NULL
+
+# Construction cnrdcal & dnrdcal
+
+cfr <- st_read("{DVFdata}/communes/communes.shp" %>% glue, stringsAsFactors=FALSE)
+st_crs(cfr) <- 2154 #projection lambert 93 standard
+cfr <- st_transform(cfr, 2154)
+names(cfr)[1]<-"insee"
+cfr %<>% mutate(DEP = str_sub(cfr$insee,1,2))
+depPdloire <- c("49","44","85","79","35","56","53")
+cpdloire <- cfr %>% filter(DEP %in% depPdloire)
+dpdloire <- cpdloire %>% group_by(DEP) %>% summarize()
+
+save_DVF(cpdloire)
+save_DVF(dpdloire)
+
+uu44701 <- NULL
 iris15 <- load_DVF("iris15")
-uu851$iris <- iris15 %>% filter(UU2010=="00851") %>% st_union 
-cidf <- load_DVF("cidf") %>% st_transform(3035)
+uu44701$iris <- iris15 %>% filter(UU2010=="44701") %>% st_union 
+cpdloire <- load_DVF("cpdloire") %>% st_transform(3035)
 
-didf <- cidf %>% group_by(DEP) %>% summarize()
+uu44701$depsf <- dpdloire
 
-uu851$depsf <- didf
-
-uu851$border <- cidf %>%
+uu44701$border <- cpdloire %>%
   filter(insee %chin%
            (iris15 %>%
-              filter(UU2010=="00851") %>%
+              filter(UU2010=="44701") %>%
               pull(COM) %>%
               unique)) %>%
   st_union
 
-uu851$bbox <- st_bbox(uu851$border)
+uu44701$bbox <- st_bbox(uu44701$border)
+
 
 riv <- st_read("{DVFdata}/fdCartes/elthydrosurface/EltHydroSurface_FXX.shp" %>% glue) %>%
   st_transform(3035)
-riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu851$border) %>% st_crop(uu851$border)
+riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu44701$border) %>% st_crop(uu44701$border)
 
-uu851$fdc <- tm_shape(uu851$border, bbox = uu851$bbox ) +
+uu44701$fdc <- tm_shape(uu44701$border, bbox = uu44701$bbox ) +
   tm_borders(lwd = 0.25) +
   tm_fill(col = "gray90", alpha = 0.5)
 
-uu851$hdc <- tm_shape(didf, bbox = uu851$bbox ) +
+uu44701$hdc <- tm_shape(dpdloire, bbox = uu44701$bbox ) +
   tm_borders(lwd = 0.25, col = "gray50") +
-  tm_shape(riv, bbox=uu851$bbox ) + tm_fill("dodgerblue", aplha=1)
+  tm_shape(riv, bbox=uu44701$bbox ) + tm_fill("dodgerblue", aplha=1)
 
-save_DVF(uu851)
+save_DVF(uu44701)
 
 # fonds de cartes de Mapbox------------------
 
 library(ceramic)
 
-username <- "xtimbeau"
-mapbox_key <- "pk.eyJ1IjoieHRpbWJlYXUiLCJhIjoiY2tnMHhiNnAwMGJyaTJzcXdqbXU1c3Y0MiJ9.ydGev8EOzUGtIUHeLlZqtQ"
-style_id <- "ckg2d9ypq0lzv19m8p6a7xqoi" # défini sur mon compte MapBox
-Sys.setenv(MAPBOX_API_KEY=mapbox_key)
+username <- "theophilegervais"
+mapbox_key <- "pk.eyJ1IjoidGhlb3BoaWxlZ2VydmFpcyIsImEiOiJja2gwZjY0N2YweGU0MnFudml6YmNoM2l4In0.jjY7QwYgIgAB7xHGHrT3ig"
+style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
+Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-idfplus <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+pdloireplus <- iris15 %>% filter(UU2010=="44701") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+st_crs(pdloireplus) <- st_crs("+proj=longlat +ellps=WGS84")
 
-idf.mbr <- cc_location(loc=idfplus, zoom = 9,
-                 base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+pdloire.mbr <- cc_location(loc=pdloireplus, zoom = 9,
+                       base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
 
-idf.mbfdc <- tm_shape(idf.mbr)+tm_rgb()
+# Mise à l'échelle du fond de carte
 
-save_DVF(idf.mbfdc)
+iris15 <- load_DVF("iris15")
+uu44701 <- iris15 %>% filter(UU2010=="44701") %>% st_union # Lille
+uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union # Paris
+c_uu851 <- uu851 %>% st_centroid
+c_uu44701 <- uu44701 %>% st_centroid
+
+# les limites appliquées à Lille sont la boite de l'aire urbaine de Paris translatée sur le centre de l'aire urbaine de Lille
+bb44701 <- st_bbox((uu851[[1]]-c_uu851[[1]]+c_uu44701[[1]]), crs=3035)
+pdloire.mbfdc <- tm_shape(pdloire.mbr, bbox = bb44701)+tm_rgb()
+
+save_DVF(pdloire.mbfdc)

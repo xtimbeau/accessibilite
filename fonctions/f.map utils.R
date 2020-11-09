@@ -234,3 +234,11 @@ croppedRaster <- function(x, na.value = NA)
     crop(x, croppedExtent)
   }
 }
+
+# renvoie l'extent (pour raster) d'un sf
+
+xt_as_extent <- function(sf) {
+  b <- st_bbox(sf)
+  extent(b$xmin, b$xmax, b$ymin, b$ymax)
+}
+
