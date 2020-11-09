@@ -29,14 +29,6 @@ dvflib <-
   lapply(dvfpackages, function(x)
     library(x, quietly = TRUE, character.only = TRUE))
 
-# chemin des fichiers sources
-GD <- Sys.getenv("GOOGLE_DRIVE")[[1]]
-LD <- Sys.getenv("LOCAL_DATA")[[1]]
-if (GD=="") GD <- "G:/Mon Drive"
-DVFdata <- "{GD}/DVFdata" %>% glue
-# répertoire local
-localdata <- "{LD}/DVF" %>% glue
-
 # multicore
 
 blas_set_num_threads(4)
@@ -69,10 +61,6 @@ source("./fonctions/f.iso2time.r", encoding="UTF-8")
 xgb_theme <- theme_minimal(base_size=9, base_family = "Calibri")
 
 tmap_options(fontfamily = "Calibri")
-# fdc_uu851 <- load_DVF("uu851")
-# uu851.fdc <- fdc_uu851$fdc
-# uu851.hdc <- fdc_uu851$hdc
-# bb851 <- fdc_uu851$bbox
 
 colorspace::sequential_hcl(n = 5, h = c(255, 255), c = c(85, 85, 50), l = c(40, 75), power = c(1, 2.25), register = "FanBlues")
 colorspace::sequential_hcl(n = 5, h = c(230,230), c = c(180, 180, 150), l = c(35, 70), power = c(0.7, 2.25), register = "FanBlues2")
@@ -93,3 +81,15 @@ heatvb <- colorspace::sequential_hcl(n = 50, h = c(280, 210), c = c(180, 90, 0),
 tmap_options(max.raster = c(plot = 1e+9, view = 1e+9))
 
 options(future.globals.maxSize= 1024^3)
+
+# chemin des fichiers sources
+GD <- Sys.getenv("GOOGLE_DRIVE")[[1]]
+LD <- Sys.getenv("LOCAL_DATA")[[1]]
+if (GD=="") GD <- "G:/Mon Drive"
+DVFdata <- "{GD}/DVFdata" %>% glue
+# répertoire local
+localdata <- "{LD}/DVF" %>% glue
+# fdc_uu851 <- load_DVF("uu851")
+# uu851.fdc <- fdc_uu851$fdc
+# uu851.hdc <- fdc_uu851$hdc
+# bb851 <- fdc_uu851$bbox
