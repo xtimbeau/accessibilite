@@ -1,0 +1,105 @@
+  source("dvf.r")
+  
+  # utile pour OSRM
+  plan("multiprocess", workers=8)
+  
+  # source des données d'opportunité
+  iris15 <- load_DVF("iris15")
+  
+  # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
+  rha <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(5000) %>% st_union
+  UU758 <- iris15 %>% filter(UU2010=="00758") %>% st_union
+  iris15_rha <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,rha, sparse=FALSE))
+  
+  # carreaux sélectionnés pour le calcul de la grille
+  # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
+  # par construction le nombre de ménages par carreau est supérieur à 10
+  
+  c200Ra <- load_DVF("c200Ra") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
+  c200_rha <- c200Ra %>% filter(st_within(., rha, sparse=FALSE)) # Paris
+  
+  # Moteur r5, en voiture ou en transit
+  # attention la voiture est lente, surout pour des temps importants
+  
+  car_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5" %>% glue, mode="CAR")
+  tr_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5" %>% glue, mode=c("WALK", "TRANSIT"))
+  
+  iso_transit_50_r5_Lyon <- iso_accessibilite2(quoi=iris15_rha, # les variables d'opportunité
+                                         ou=c200_rha,# la grille cible (plus long sur c200 que sur c200_mt)
+                                         resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
+                                         tmax=60, # le temps max des isochrones en minutes
+                                         pdt=5, # le pas de temps pour retourner le résultat en minute
+                                         routing=tr_r5_Lyon) # moteur de routing
+  
+  save_DVF(iso_transit_50_r5_Lyon)
+  
+  tm_shape(iso_transit_50_r5_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
+  
+  
+  
+  
+  # moteur OSRM
+  # pas de transports en commun
+  # rapide pour la voiture, y compris pour des temps longs
+  
+  car_osrm_Lyon <- routing_setup_osrm(server="5002", profile="driving")
+  foot_osrm_Lyon <- routing_setup_osrm(server="5001", profile="walk")
+  
+  iso_car_50_osrm_Lyon <- iso_accessibilite2(quoi=iris15_rha, # les variables d'opportunité
+                                         ou=c200_rha,# la grille cible
+                                         resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
+                                         tmax=90, # le temps max des isochrones en minutes
+                                         pdt=5, # le pas de temps pour retourner le résultat en minute
+                                         routing=car_osrm_Lyon) # moteur de routing
+  
+  save_DVF(iso_car_50_osrm_Lyon)
+  
+  tm_shape(iso_car_50_osrm_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
+  
+  iso_foot_50_osrm_Lyon <- iso_accessibilite2(quoi=iris15_rha, # les variables d'opportunité
+                                       ou=c200_rha, # la grille cible
+                                       resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
+                                       tmax=15, # le temps max des isochrones en minutes
+                                       pdt=1, # le pas de temps pour retourner le résultat en minute
+                                       routing=foot_osrm_Lyon) # moteur de routing
+  
+  save_DVF(iso_foot_50_osrm_Lyon)
+  
+  tm_shape(iso_foot_50_osrm_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
+  
+  # Pour mettre en place r5 ---------------
+  
+  # il faut installer le sdk java v11 (https://www.oracle.com/java/technologies/javase-jdk11-downloads.html) ,
+  # puis le package R rJava
+  # la version de développement de r5
+  
+  # devtools::install_github("ipeaGIT/r5r", subdir = "r-package")
+  
+  # il faut ensuite créer un dossier où se trouvent le pbf (OSM découpé) et le ou les GTFS pour le transport
+  # c'est ce dossier que lon passe ensuite à routing_setup_r5
+  
+  
+  
+  # Pour mettre en place OSRM --------------
+  
+  # il faut installer Docker et WSL2
+  # il faut ensuite créer un dossier avec le pdf d'OSM découpé
+  # Puis il faut en se plaçant dans le dossier et en ouvrant powershell lancer les commandes suivantes:
+  # 
+  # Normalement charge de docker hub les fichiers nécessaires
+  # on défini ici le profil de déplacement (/opt/car.lua pour la voiture, /opt/foot.lua pour la marche, etc...)
+  # si on modifie le profile car.lua, il faut le placer dans le dossier et changer /opt/car.lua en /data/car.lua
+  # c'est ce qui est fait ici le car.lua a été modifé pour augmenter la pénalité de feu rouge de 2s à 20s
+  # dans cet exemple le pdf s'appelle Idf-latest.osm.pdf
+  
+  # docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-extract -p /data/car.lua /data/Idf-latest.osm.pbf
+  # docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-partition /data/Idf-latest.osrm
+  # docker run -t -v "${PWD}:/data" osrm/osrm-backend osrm-customize /data/Idf-latest.osrm
+  
+  # fabrique le coneneur, que lon' peut relancer à chaque fois (pas besoin de le reconstruire)
+  # on lui donne un nom, pour le reconnaitre et un numéro de port (qui transfère 5002 vers 5000 qui est utilisé dans le conteneur) pour avoir plusieurs
+  # conteneurs qui correspondent à plusieurs options (voiture, voiture avec pénalité feu rouge, à pied, en vélo)
+  # il faut vérifier que le conteneur est lancé dans docker et le relancer sinon
+  
+  # docker run -t -i --name=osrm_idf_car_t -p 5002:5000 -v "${PWD}:/data" osrm/osrm-backend osrm-routed --algorithm mld --max-table-size 1000000 --threads 8 /data/Idf-latest.osrm
+  
