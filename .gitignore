@@ -3,4 +3,6 @@
 .RData
 .Ruserdata
 .rstudio
-data
+r5r_data
+rda
+logs

@@ -1,11 +1,11 @@
-source("DVF.r")
+source("access.r")
 plan(sequential)
-c200_idf <- load_DVF("c200idf") %>% st_transform(3035)
+c200 <- load_DVF("c200") %>% st_transform(3035)
 iris15 <- load_DVF("iris15")
 idfplus20 <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(20000) %>% st_union
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union
 iris15_idf <- iris15 %>% filter(st_within(., idfplus20, sparse=FALSE))
-c200_idf <- c200_idf %>% filter(st_within(., uu851, sparse=FALSE))
+c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 
 # définition des points d'arrivée à partir des centres des iris
 opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
@@ -110,10 +110,10 @@ trGPE_r5 <- routing_setup_r5(path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, mode=c(
 iso_GPE_50_r5 <-iso_accessibilite(
   quoi=opp, 
   ou=c200_idf,
-  resolution=50, 
+  resolution=200, 
   tmax=90,
   pdt=5, 
-  routing=trGPE_r5)
+  routing=tr_r5)
 
 save_DVF(iso_GPE_50_r5)
 
