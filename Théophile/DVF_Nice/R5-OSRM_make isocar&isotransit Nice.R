@@ -1,8 +1,8 @@
-source("dvf.r")
+source("access.r")
 
 # utile pour OSRM
 plan("multiprocess", workers=8)
-plan(multisession, workers=8)
+plan(multisession, workers=8) # pour remettre les workers à 0 
 
 # source des données d'opportunité
 iris15 <- load_DVF("iris15")

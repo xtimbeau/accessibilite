@@ -7,7 +7,7 @@
   iris15 <- load_DVF("iris15")
   
   # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
-  rha <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(5000) %>% st_union
+  rha <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(20000) %>% st_union
   uu758 <- iris15 %>% filter(UU2010=="00758") %>% st_union
   iris15_rha <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,rha, sparse=FALSE)) %>% st_centroid()
   
@@ -24,7 +24,8 @@
   # attention la voiture est lente, surout pour des temps importants
   
   car_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode="CAR")
-  tr_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode=c("WALK", "TRANSIT"))
+  tr_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode=c("WALK", "TRANSIT"),
+                                 time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
   
   iso_transit_50_r5_Lyon <- iso_accessibilite(quoi=iris15_rha,
                                          ou=c200_758,
@@ -47,8 +48,8 @@
   car_osrm_Lyon <- routing_setup_osrm(server="5002", profile="driving")
   foot_osrm_Lyon <- routing_setup_osrm(server="5001", profile="walk")
   
-  iso_car_50_osrm_Lyon <- iso_accessibilite2(quoi=iris15_rha, # les variables d'opportunité
-                                         ou=c200_rha,# la grille cible
+  iso_car_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
+                                         ou=c200_758,# la grille cible
                                          resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                          tmax=90, # le temps max des isochrones en minutes
                                          pdt=5, # le pas de temps pour retourner le résultat en minute
@@ -58,8 +59,8 @@
   
   tm_shape(iso_car_50_osrm_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
   
-  iso_foot_50_osrm_Lyon <- iso_accessibilite2(quoi=iris15_rha, # les variables d'opportunité
-                                       ou=c200_rha, # la grille cible
+  iso_foot_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
+                                       ou=c200_758, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=15, # le temps max des isochrones en minutes
                                        pdt=1, # le pas de temps pour retourner le résultat en minute

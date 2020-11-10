@@ -64,11 +64,10 @@ style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
 Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-uu758plus20 <- load_DVF("uu758plus20")
-uu758plus20 <- uu758plus20 %>% st_transform(4326)  
-st_crs(uu758plus20) <- st_crs("+proj=longlat +ellps=WGS84")
+rhaplus <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(30000) %>% st_union %>% st_transform(4326)
+st_crs(rhaplus) <- st_crs("+proj=longlat +ellps=WGS84") 
 
-rha.mbr <- cc_location(loc=uu758plus20, zoom = 9,
+rha.mbr <- cc_location(loc=rhaplus, zoom = 9,
                         base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
 
 maxs <- cellStats(rha.mbr, max)
