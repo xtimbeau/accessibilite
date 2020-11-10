@@ -9,12 +9,13 @@ iris15 <- load_DVF("iris15")
 # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
 rha <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(20000) %>% st_union #uu758plus20
 uu758 <- iris15 %>% filter(UU2010=="00758") %>% st_union
-iris15_rha <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,rha, sparse=FALSE))
+iris15_rha <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,rha, sparse=FALSE)) %>% st_centroid()
   
 # carreaux sélectionnés pour le calcul de la grille
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
-  
+
+c200 <- load_DVF("c200")  
 c200_758 <- c200 %>% filter(st_within(., uu758, sparse=FALSE))
 c200_rha <- c200_758 %>% filter(st_within(., rha, sparse=FALSE)) 
   
