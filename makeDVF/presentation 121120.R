@@ -3,13 +3,41 @@ c200 <- load_DVF('c200')
 iris15 <- load_DVF("iris15")
 
 # IDF -----------------------------------
+isos_tr <- map(depIdf, ~load_DVF("iso75/isotr50r5d{.x}"))
+
+iso_tr_50_r5 <-list(
+  EMP09 = do.call(raster::merge, map(isos_tr, "EMP09")),
+  P15_POP = do.call(raster::merge, map(isos_tr, "P15_POP")),
+  cste = do.call(raster::merge, map(isos_tr, "cste")))
+
+names(iso_tr_50_r5$EMP09) <- names(isos_tr[[1]]$EMP09)
+names(iso_tr_50_r5$P15_POP) <- names(isos_tr[[1]]$P15_POP)
+names(iso_tr_50_r5$cste) <- names(isos_tr[[1]]$cste)
+save_DVF(iso_tr_50_r5)
+iso_tr_200_r5 <- map(iso_tr_50_r5, ~raster::aggregate(.x, 4))
+save_DVF(iso_tr_200_r5, rep="rda/iso200")
+
+ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(25000, 50000, 750000, 100000,150000,200000, 250000,500000))
+save_DVF(ttrr5_emp09)
+
+ttrr5_emp09_200 <- raster::aggregate(ttrr5_emp09, 4)
+save_DVF(ttrr5_emp09_200, rep="rda/iso200")
 
 #transit
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 uu851.mbfdc <- load_DVF("uu851.mbfdc")
 fdc851 <- load_DVF("uu851")
-m_idf <- uu851.mbfdc+tm_shape(ttrr5_emp09_200$to100k)+tm_raster(style="cont", palette=heatrg)+fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
+m_idf <- uu851.mbfdc+
+  tm_shape(ttrr5_emp09_200$to100k)+
+  tm_raster(style="cont", palette=heatrg)+
+  fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
 graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 200" %>% glue)
+m_idf <- uu851.mbfdc+
+  tm_shape(ttrr5_emp09_200$to25k)+
+  tm_raster(style="cont", palette=heatrg)+
+  fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 25k" %>% glue)
+
 
 idf_dt <- r2dt(ttrr5_emp09_200)
 idf_dt <- merge(dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
@@ -35,22 +63,31 @@ idf_buf <- map_dfr(c(-seq(0, 20000, 1000), seq(0, 20000, 1000)) %>% sort %>% uni
   filter(pop>0) %>% 
   mutate(dist_buf = dist_buf -min(dist_buf))
 
-dist_buf <- ggplot(idf_buf, aes(x=dist_buf, y=dpop))+geom_line(col="blue")+ylim(c(0,1000000))
+dist_buf <- ggplot(idf_buf, aes(x=dist_buf, y=dpop))+
+  geom_line(col="blue", size=2)+ylim(c(0,1000000))+
+  theme(text = element_text(size=24))
 graph2svg(dist_buf, file="{DVFdata}/presentation/vv/idf_d_buff" %>% glue)
 
 #distance euclidienne
 d2c <- st_distance(st_centroid(uu851), st_as_sf(idf_dt, coords=c("x", "y"), crs=3035)) %>% as.numeric
 bb <- seq(0,max(idf_dt$d_c), 1000)
 idf_dt[, d_c:=as.numeric(d2c)] [, d_c_bin:=bb[findInterval(d_c, vec=bb)+1]]
-dist_c <- ggplot(idf_dt[, .(Ind=sum(Ind)), by="d_c_bin"], aes(x=d_c_bin, y=Ind))+geom_line(col="orange")+ylim(c(0,1000000))
-graph2svg(dist_buf, file="{DVFdata}/presentation/vv/idf_d_buff" %>% glue)
+dist_c <- ggplot(idf_dt[, .(Ind=sum(Ind)), by="d_c_bin"], aes(x=d_c_bin, y=Ind))+
+  geom_line(col="orange", size=2)+
+  ylim(c(0,1000000))+
+  theme(text = element_text(size=24))
+graph2svg(dist_c, file="{DVFdata}/presentation/vv/idf_d_c" %>% glue)
 
 #distance transit
 bb <- seq(0,90,2)
 idf_dt[, d_buf_bin:=bb[findInterval(to100k, vec=bb)]]
-dist_tt <- ggplot(idf_dt[, .(Ind=sum(Ind)), by="d_buf_bin"], aes(x=d_buf_bin, y=Ind))+geom_line(col="green")+ylim(c(0,1000000))
+dist_tt <- ggplot(idf_dt[, .(Ind=sum(Ind)), by="d_buf_bin"], aes(x=d_buf_bin, y=Ind))+
+  geom_line(col="green", size=2)+
+  ylim(c(0,1000000))+
+  theme(text = element_text(size=24))
 graph2svg(dist_tt, file="{DVFdata}/presentation/vv/idf_d_ttr100kemp09" %>% glue)
-dcvsdt <- ggplot(idf_dt, aes(x=d2c, y=to100k))+geom_point(alpha=0.05, col="darkblue")
+dcvsdt <- ggplot(idf_dt, aes(x=d2c, y=to100k))+geom_point(alpha=0.05, col="darkblue")+
+  theme(text = element_text(size=24))
 graph2svg(dcvsdt, file="{DVFdata}/presentation/vv/idf_dc_versus_dt" %>% glue)
 
 # isochrones
@@ -110,7 +147,7 @@ save_DVF(tcarosrm_emp09)
 tcarosrm_emp09_200 <- raster::aggregate(tcarosrm_emp09, 4)
 save_DVF(tcarosrm_emp09_200, rep="rda/iso200")
 
-tcarosrm_emp09_200 <- load_DVF("iso200/ttrosrm_emp09_200")
+tcarosrm_emp09_200 <- load_DVF("iso200/tcarosrm_emp09_200")
 uu851.mbfdc <- load_DVF("uu851.mbfdc")
 fdc851 <- load_DVF("uu851")
 m_idf <- uu851.mbfdc+tm_shape(tcarosrm_emp09_200$to100k)+tm_raster(style="cont", palette=heatrg)+fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
@@ -125,3 +162,10 @@ uu851plus20 <- uu851 %>% st_buffer(20000)
 c200_851 <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 c200_851_plus <- c200 %>% filter(st_within(., uu851 %>% st_buffer(10000), sparse=FALSE))
 
+# parcs et jardins
+
+pejt <- load_DVF("iso_f_petj_50_osrm")
+m_pejt <- uu851.mbfdc+
+  tm_shape(pejt$iso15m)+
+  tm_raster(style="cont", palette=heatrg)+
+  fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
