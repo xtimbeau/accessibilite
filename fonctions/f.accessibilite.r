@@ -335,7 +335,7 @@ iso_split_ou <- function(ou, quoi, chunk, mode="CAR", tmax=60)
   
   resolution <- 12.5*2^floor(max(0,log2(sqrt(surf/ngr)/12.5)))
   
-  log_info("résolution des groupes {resolution}")
+  log_info("resolution des groupes {resolution}")
   idINS <- idINS3035(ou$x, ou$y, resolution)
   uidINS <- unique(idINS)
   
