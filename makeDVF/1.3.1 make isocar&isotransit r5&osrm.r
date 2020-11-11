@@ -22,6 +22,7 @@ tr_r5 <- routing_setup_r5(
   n_threads = 4)
 
 # la petite couronne en résolution 50 parce que c'est comme ça
+res <- 200
 walk(c("75", "91", "92", "93"), ~{
   tr_r5 <- routing_setup_r5(
     path="{DVFdata}/r5r_data/IDFM" %>% glue, 
@@ -33,15 +34,22 @@ walk(c("75", "91", "92", "93"), ~{
   rr <- iso_accessibilite(
     quoi=opp,            
     ou=c200_idf %>% filter(dep==.x),          
-    resolution=50,      
+    resolution=res,      
     tmax=90,            
     pdt=5,               
     routing=tr_r5)
-  save_DVF(rr, "isotr50r5d{.x}" %>% glue, rep="rda/iso75")})
+  save_DVF(rr, "isotr{res}r5d{.x}" %>% glue, rep="rda/iso75")})
 
 # la grande couronne en résolution 200 en attendant d'avoir le temps
-walk(c("77", "78", "91", "95"), ~{
+walk("94", ~{ # c("77", "78", "91", "95")
   message(.x)
+  tr_r5 <- routing_setup_r5(
+    path="{DVFdata}/r5r_data/IDFM" %>% glue, 
+    mode=c("WALK", "TRANSIT"),
+    time_window=60,
+    montecarlo = 100, 
+    percentiles = 5L,
+    n_threads = 4)
   rr <- iso_accessibilite(
     quoi=opp,            
     ou=c200_idf %>% filter(dep==.x),          
@@ -107,17 +115,17 @@ trGPE_r5 <- routing_setup_r5(path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, mode=c(
                              percentiles = 5L,
                              n_threads = 4)
 
-iso_GPE_50_r5 <-iso_accessibilite(
+iso_GPE_200_r5 <-iso_accessibilite(
   quoi=opp, 
   ou=c200_idf,
   resolution=200, 
   tmax=90,
   pdt=5, 
-  routing=tr_r5)
+  routing=trGPE_r5)
 
-save_DVF(iso_GPE_50_r5)
+save_DVF(iso_GPE_200_r5, rep!"rda/is200")
 
-tGPEr5_emp09 <- iso2time(iso_GPE_50_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
+tGPEr5_emp09 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(tGPEr5_emp09)
 
 save_DVF(ttrGPEr5_emp09)
