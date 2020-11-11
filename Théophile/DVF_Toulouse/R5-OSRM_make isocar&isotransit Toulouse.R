@@ -9,15 +9,16 @@ iris15 <- load_DVF("iris15")
 # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
 lgdrous <- iris15 %>% filter(UU2010=="31701") %>% st_buffer(10000) %>% st_union
 UU31701 <- iris15 %>% filter(UU2010=="31701") %>% st_union
-iris15_lgdrous <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,lgdrous, sparse=FALSE))
+iris15_lgdrous <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,lgdrous, sparse=FALSE)) %>% st_centroid()
 
 # carreaux sélectionnés pour le calcul de la grille
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
 
-c200Lgdrous <- load_DVF("c200Lgdrous") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
-c200_lgdrous <- c200Lgdrous %>% filter(st_within(., lgdrous, sparse=FALSE)) # Paris
+c200 <- load_DVF("c200") 
+c200_758 <- c200 %>% filter(st_within(., uu758, sparse=FALSE))
 
+rm(c200, iris15)
 # Moteur r5, en voiture ou en transit
 # attention la voiture est lente, surout pour des temps importants
 

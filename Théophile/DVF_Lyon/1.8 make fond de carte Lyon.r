@@ -68,7 +68,7 @@ rhaplus <- iris15 %>% filter(UU2010=="00758") %>% st_buffer(30000) %>% st_union 
 st_crs(rhaplus) <- st_crs("+proj=longlat +ellps=WGS84") 
 
 rha.mbr <- cc_location(loc=rhaplus, zoom = 9,
-                        base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+                       base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
 
 maxs <- cellStats(rha.mbr, max)
 rha.mbr <- projectRaster(from=rha.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers

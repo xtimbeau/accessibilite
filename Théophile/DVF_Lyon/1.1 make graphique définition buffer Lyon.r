@@ -1,8 +1,8 @@
-source("dvf.r")
+source("access.r")
 
 c200 <- load_DVF("c200")
 iris15 <- load_DVF("iris15")
-uu758 <- iris15 %>% filter(UU2010=="00758") %>% st_union()
+uu758<- iris15 %>% filter(UU2010=="00758") %>% st_union()
 uu758plus20 <- uu758 %>% st_buffer(20000)
 c200_758 <- c200 %>% filter(st_within(., uu758, sparse=FALSE))
 

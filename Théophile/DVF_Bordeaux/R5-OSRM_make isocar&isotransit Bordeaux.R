@@ -1,23 +1,24 @@
-source("dvf.r")
+source("access.r")
 
 # utile pour OSRM
 plan("multiprocess", workers=8)
-plan(multisession, workers=8)
 
 # source des données d'opportunité
 iris15 <- load_DVF("iris15")
 
 # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
-aqui <- iris15 %>% filter(UU2010=="33701") %>% st_buffer(10000) %>% st_union
-UU33701 <- iris15 %>% filter(UU2010=="33701") %>% st_union
-iris15_aqui <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,aqui, sparse=FALSE))
+aqui <- iris15 %>% filter(UU2010=="33701") %>% st_buffer(20000) %>% st_union
+uu33701 <- iris15 %>% filter(UU2010=="33701") %>% st_union
+iris15_aqui <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,aqui, sparse=FALSE)) %>% st_centroid()
 
 # carreaux sélectionnés pour le calcul de la grille
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
 
-c200Aqui <- load_DVF("c200Aqui") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
-c200_aqui <- c200Aqui %>% filter(st_within(.,aqui,sparse=FALSE))
+c200 <- load_DVF("c200") 
+c200_33701 <- c200 %>% filter(st_within(., uu33701, sparse=FALSE))
+
+rm(c200, iris15)
 
 
 # Moteur r5, en voiture ou en transit
@@ -27,8 +28,8 @@ car_r5_Bordeaux <- routing_setup_r5(path="{DVFdata}/r5r_data/Bordeaux/r5" %>% gl
 tr_r5_Bordeaux<- routing_setup_r5(path="{DVFdata}/r5r_data/Bordeaux/r5" %>% glue, mode=c("WALK", "TRANSIT"),
                                   time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
 
-iso_transit_50_r5_Bordeaux <- iso_accessibilite2(quoi=iris15_aqui, # les variables d'opportunité
-                                       ou=c200_aqui, # la grille cible (plus long sur c200 que sur c200_mt)
+iso_transit_50_r5_Bordeaux <- iso_accessibilite(quoi=iris15_aqui, # les variables d'opportunité
+                                       ou=c200_33701, # la grille cible (plus long sur c200 que sur c200_mt)
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=60, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute
@@ -48,7 +49,7 @@ tm_shape(iso_transit_50_r5_Bordeaux$EMP09)+tm_raster(style="cont", palette=heatr
 car_osrm_Bordeaux <- routing_setup_osrm(server="5002", profile="driving")
 foot_osrm_Bordeaux <- routing_setup_osrm(server="5001", profile="walk")
 
-iso_car_50_osrm_Bordeaux <- iso_accessibilite2(quoi=iris15_aqui, # les variables d'opportunité
+iso_car_50_osrm_Bordeaux <- iso_accessibilite(quoi=iris15_aqui, # les variables d'opportunité
                                        ou=c200_aqui, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=90, # le temps max des isochrones en minutes
@@ -59,7 +60,7 @@ save_DVF(iso_car_50_osrm_Bordeaux)
 
 tm_shape(iso_car_50_osrm_Bordeaux$EMP09)+tm_raster(style="cont", palette=heatrg)
 
-iso_foot_50_osrm_Bordeaux <- iso_accessibilite2(quoi=iris15_aqui, # les variables d'opportunité
+iso_foot_50_osrm_Bordeaux <- iso_accessibilite(quoi=iris15_aqui, # les variables d'opportunité
                                      ou=c200_aqui, # la grille cible
                                      resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                      tmax=30, # le temps max des isochrones en minutes

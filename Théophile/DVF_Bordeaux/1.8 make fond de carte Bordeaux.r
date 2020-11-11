@@ -1,4 +1,4 @@
-source("dvf.r")
+source("access.r")
 
 #Construction caqui & daqui
 cfr <- st_read("{DVFdata}/communes/communes.shp" %>% glue, stringsAsFactors=FALSE)
@@ -6,10 +6,17 @@ st_crs(cfr) <- 2154 #projection lambert 93 standard
 cfr <- st_transform(cfr, 2154)
 names(cfr)[1]<-"insee"
 cfr %<>% mutate(DEP = str_sub(cfr$insee,1,2))
-depAqui <- c("33")
-caqui <- cfr %>% filter(DEP %in% depAqui)
+
+uu33701 <- iris15 %>% filter(UU2010=="33701") %>% st_union()
+c200_33701 <- c200 %>% filter(st_within(., uu33701, sparse=FALSE))
+c200_33701 %<>% st_transform(3035) %>% st_as_sf
+uu33701plus20 <- uu33701 %>% st_buffer(20000)
+c200_aqui <- c200_33701 %>% filter(st_within(., uu33701plus20, sparse=FALSE))
+
+caqui <- cfr %>% filter(DEP %in% c200_aqui)
 daqui <- caqui %>% group_by(DEP) %>% summarize()
 
+save_DVF(uu33701plus20)
 save_DVF(daqui)
 save_DVF(caqui)
 
@@ -55,11 +62,15 @@ style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
 Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-aquiplus <- iris15 %>% filter(UU2010=="33701") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+aquiplus <- iris15 %>% filter(UU2010=="33701") %>% st_buffer(30000) %>% st_union %>% st_transform(4326)
 st_crs(aquiplus) <- st_crs("+proj=longlat +ellps=WGS84")
 
 aqui.mbr <- cc_location(loc=aquiplus, zoom = 9,
                           base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+
+maxs <- cellStats(aqui.mbr, max)
+aqui.mbr <- projectRaster(from=aqui.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
+aqui.mbr <- aqui.mbr/cellStats(aqui.mbr, max)*maxs %>% as.integer 
 
 # Mise à l'échelle du fond de carte
 

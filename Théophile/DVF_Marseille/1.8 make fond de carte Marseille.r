@@ -1,13 +1,24 @@
-source("dvf.r")
+source("access.r")
+
 cfr <- st_read("{DVFdata}/communes/communes.shp" %>% glue, stringsAsFactors=FALSE)
-st_crs(cfr) <- 2154 #projection lambert 93 standard
+st_crs(cfr) <- 2154 
 cfr <- st_transform(cfr, 2154)
 names(cfr)[1]<-"insee"
 cfr %<>% mutate(DEP = str_sub(cfr$insee,1,2))
-depPaca <- c("83","84","04","13")
-cpaca <- cfr %>% filter(DEP %in% depPaca)
+
+iris15 <- load_DVF("iris15")
+c200 <- load_DVF("c200")
+
+uu759 <- iris15 %>% filter(UU2010=="00759") %>% st_union()
+c200_759 <- c200 %>% filter(st_within(., uu759, sparse=FALSE))
+c200_759 %<>% st_transform(3035) %>% st_as_sf
+uu759plus20 <- uu759 %>% st_buffer(20000)
+c200_paca <- c200_759 %>% filter(st_within(., uu759plus20, sparse=FALSE))
+
+cpaca <- cfr %>% filter(DEP %in% c200_paca)
 dpaca <- cpaca %>% group_by(DEP) %>% summarize()
 
+save_DVF(uu759plus20)
 save_DVF(dpaca)
 save_DVF(cpaca)
 
@@ -54,11 +65,16 @@ style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
 Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-pacaplus <- iris15 %>% filter(UU2010=="00759") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+pacaplus <- iris15 %>% filter(UU2010=="00759") %>% st_buffer(30000) %>% st_union %>% st_transform(4326)
 st_crs(pacaplus) <- st_crs("+proj=longlat +ellps=WGS84")
 
 paca.mbr <- cc_location(loc=pacaplus, zoom = 9,
                         base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+
+maxs <- cellStats(paca.mbr, max)
+paca.mbr <- projectRaster(from=paca.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
+paca.mbr <- paca.mbr/cellStats(paca.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
+
 
 # Mise à l'échelle du fond de carte
 
