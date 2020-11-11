@@ -7,6 +7,7 @@ cfr <- st_transform(cfr, 2154)
 names(cfr)[1]<-"insee"
 cfr %<>% mutate(DEP = str_sub(cfr$insee,1,2))
 
+c200 <- load_DVF("c200")
 uu33701 <- iris15 %>% filter(UU2010=="33701") %>% st_union()
 c200_33701 <- c200 %>% filter(st_within(., uu33701, sparse=FALSE))
 c200_33701 %<>% st_transform(3035) %>% st_as_sf
@@ -71,6 +72,8 @@ aqui.mbr <- cc_location(loc=aquiplus, zoom = 9,
 maxs <- cellStats(aqui.mbr, max)
 aqui.mbr <- projectRaster(from=aqui.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
 aqui.mbr <- aqui.mbr/cellStats(aqui.mbr, max)*maxs %>% as.integer 
+
+save_DVF(aqui.mbr)
 
 # Mise à l'échelle du fond de carte
 
