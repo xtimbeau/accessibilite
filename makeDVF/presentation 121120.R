@@ -166,6 +166,7 @@ c200_851_plus <- c200 %>% filter(st_within(., uu851 %>% st_buffer(10000), sparse
 
 pejt <- load_DVF("iso_f_petj_50_osrm")
 m_pejt <- uu851.mbfdc+
-  tm_shape(pejt$iso15m)+
+  tm_shape(pejt$c$iso15m^0.2)+
   tm_raster(style="cont", palette=heatrg)+
   fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(m_pejt, file="{DVFdata}/presentation/vv/pejt iso15m" %>% glue)
