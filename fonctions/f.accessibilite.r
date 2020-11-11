@@ -834,3 +834,70 @@ routing_setup_osrm <- function(
                 walk="WALK",
                 bike="BIKE"))
 }
+
+# Illustrations---------------------
+
+r5_isochrone <- function(lon, lat,                         # en coordonnées lon, lat
+                         resolution= 50,
+                         r5_core,                      # pointeur sur le core r5 utilisé ou chemin vers le dosssier
+                         mode=c("WALK", "TRANSIT"),    # TRANSIT, CAR, WALK etc...
+                         date="17-12-2019 8:00:00",    # au format = "%d-%m-%Y %H:%M:%S"
+                         max_walk_dist=2000,           # en mètres
+                         temps_max=10L,                # en minutes
+                         time_window=1L,
+                         montecarlo=1L,
+                         plot=FALSE,
+                         nthreads=parallel::detectCores(logical=FALSE))
+{
+  tic()
+
+  if(is.character(r5_core)) {
+    Message("Lecture du schéma géographique")
+    core <- setup_r5(data_path =r5_core)
+  }
+  
+  else core <- r5_core
+  assertthat::assert_that("jobjRef"%in% class(core))
+  
+  r5_core$setNumberOfMonteCarloDraws(as.integer(montecarlo))
+  
+  vitesse <- vmaxmode(mode)
+  
+  origin  <- tibble(lon=lon, lat=lat, id="1")
+  
+  origin_sf <- origin %>% st_as_sf(coords=c("lon", "lat"), crs=4326)
+  destination_sf <- origin_sf %>%  st_transform(3035) %>% st_buffer(temps_max*vitesse)
+  destination <- fasterize(destination_sf, raster_ref(destination_sf, resolution), fun="any")
+  xy <- raster::xyFromCell(destination, which(raster::values(destination) == 1)) 
+  xy_4326 <- sf_project(pts=xy,from=st_crs(3035), to=st_crs(4326))
+  destinations <- data.table(lon=xy_4326[,1], lat=xy_4326[,2],
+                             x = xy[,1], y=xy[,2],
+                             id=as.character(1:nrow(xy)))
+  
+  ttm <- travel_time_matrix(core,
+                            origins = origin,
+                            destinations = destinations,
+                            mode=mode,
+                            departure_datetime = as.POSIXct(date, format = "%d-%m-%Y %H:%M:%S"),
+                            max_walk_dist = max_walk_dist,
+                            max_trip_duration = temps_max+1,
+                            time_window = as.integer(time_window),
+                            percentiles = 50L,
+                            walk_speed = 3.6,
+                            bike_speed = 12,
+                            max_rides = 3,
+                            n_threads = nthreads)
+  if(nrow(ttm)>0)
+  {
+    ttm <- merge(ttm, destinations, by.x="toId", by.y="id", all.x=TRUE)
+    raster <- rasterize(cbind(ttm$x, ttm$y), destination, field=ttm$travel_time)
+  }
+  if(plot)
+  {
+    map <- 
+      tm_shape(tmaptools::read_osm(destination_sf, type="osm"))+tm_rgb(saturation = 0)+
+      tm_shape(raster)+tm_raster(style="cont", palette=heatvb, alpha=0.5)
+    print(map)
+  }
+  invisible(raster)
+}
