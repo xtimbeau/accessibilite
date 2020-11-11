@@ -12,6 +12,9 @@ iso_transit_50_r5_Lyon <- load_DVF("iso_transit_50_r5_Lyon")
 norm_tr <- iso_transit_50_r5_Lyon$bricks$EMP09/iso_transit_50_r5_Lyon$vars$EMP09
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
 
+ttr_r5_emp09_Lyon <- iso2time(iso_transit_50_r5_Lyon$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000,175000,200000,225000,250000,275000,300000))
+
+
 ttr_emp09_10_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
 ttr_emp09_15_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
 ttr_emp09_20_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
@@ -21,7 +24,7 @@ ttr_emp09_30_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes
 ttr_emp09 <- brick(list(ttr_emp09_10_Lyon, ttr_emp09_15_Lyon, ttr_emp09_20_Lyon, ttr_emp09_25_Lyon, ttr_emp09_30_Lyon))
 names(ttr_emp09_Lyon) <- c("emp10_Lyon", "emp15_Lyon", "emp20_Lyon", "emp25_Lyon", "emp30_Lyon")
 
-save_DVF(ttr_emp09_Lyon)
+save_DVF(ttr_r5_emp09_Lyon)
 
 norm_tr_Lyon <- iso_transit_50_r5_Lyon$bricks$P15_POP/iso_transit_50_r5_Lyon$vars$P15_POP
 isotimes_Lyon <- names(norm_tr_Lyon) %>% str_extract("[:digit:]+") %>% as.numeric()

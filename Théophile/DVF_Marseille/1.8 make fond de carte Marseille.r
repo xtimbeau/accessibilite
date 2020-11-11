@@ -75,6 +75,7 @@ maxs <- cellStats(paca.mbr, max)
 paca.mbr <- projectRaster(from=paca.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
 paca.mbr <- paca.mbr/cellStats(paca.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
 
+save_DVF(paca.mbr)
 
 # Mise à l'échelle du fond de carte
 

@@ -1,6 +1,6 @@
 source("access.r")
 
-fisoinv <- function(x, isotimes, seuil=0.1)
+fisoinv <- function(x, isotimes, seuil=0.2)
 {
   l <- length(isotimes)
   if(x[l]>=seuil) approx(y=isotimes, x=x %>% as.vector , xout=seuil)$y
@@ -12,17 +12,23 @@ iso_transit_50_r5_Bordeaux <- load_DVF("iso_transit_50_r5_Bordeaux")
 norm_tr_Bordeaux <- iso_transit_50_r5_Bordeaux$bricks$EMP09/iso_transit_50_r5_Bordeaux$vars$EMP09
 isotimes_Bordeaux <- names(norm_tr_Bordeaux) %>% str_extract("[:digit:]+") %>% as.numeric()
 
+ttr_r5_emp09_Bordeaux <- iso2time(iso_transit_50_r5_Bordeaux$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000))
+
+# inutile?
 ttr_emp09_10_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
 ttr_emp09_15_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
 ttr_emp09_20_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
 ttr_emp09_25_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.25))
 ttr_emp09_30_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.3))
 
-ttr_emp09_Bordeaux <- brick(list(ttr_emp09_10_Bordeaux, ttr_emp09_15_Bordeaux, ttr_emp09_20_Bordeaux, ttr_emp09_25_Bordeaux, ttr_emp09_30_Bordeaux))
+ttr_r5_emp09_Bordeaux <- brick(list(ttr_emp09_10_Bordeaux, ttr_emp09_15_Bordeaux, ttr_emp09_20_Bordeaux, ttr_emp09_25_Bordeaux, ttr_emp09_30_Bordeaux))
 names(ttr_emp09_Bordeaux) <- c("emp10_Bordeaux", "emp15_Bordeaux", "emp20_Bordeaux", "emp25_Bordeaux", "emp30_Bordeaux")
+# fin inutile?
 
-save_DVF(ttr_emp09_Bordeaux)
+save_DVF(ttr_r5_emp09_Bordeaux)
 
+
+# isotime pop
 norm_tr_Bordeaux <- iso_transit_50_r5_Bordeaux$bricks$P15_POP/iso_transit_50_r5_Bordeaux$vars$P15_POP
 isotimes_Bordeaux <- names(norm_tr_Bordeaux) %>% str_extract("[:digit:]+") %>% as.numeric()
 

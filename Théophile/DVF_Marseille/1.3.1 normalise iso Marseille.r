@@ -1,4 +1,4 @@
-source("dvf.r")
+source("access.r")
 
 fisoinv <- function(x, isotimes, seuil=0.2)
 {
@@ -12,6 +12,9 @@ iso_transit_50 <- load_DVF("iso_transit_50")
 norm_tr <- iso_transit_50$bricks$EMP09/iso_transit_50$vars$EMP09
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
 
+ttr_r5_emp09_Marseille <- iso2time(iso_transit_50_r5_Marseille$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000,175000))
+
+
 ttr_emp09_10 <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
 ttr_emp09_15 <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
 ttr_emp09_20 <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
@@ -21,7 +24,7 @@ ttr_emp09_30 <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seu
 ttr_emp09 <- brick(list(ttr_emp09_10, ttr_emp09_15, ttr_emp09_20, ttr_emp09_25, ttr_emp09_30))
 names(ttr_emp09) <- c("emp10", "emp15", "emp20", "emp25", "emp30")
 
-save_DVF(ttr_emp09)
+save_DVF(ttr_r5_emp09_Marseille)
 
 norm_tr <- iso_transit_50$bricks$P15_POP/iso_transit_50$vars$P15_POP
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()

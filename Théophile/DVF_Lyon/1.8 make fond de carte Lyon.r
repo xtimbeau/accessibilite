@@ -74,6 +74,7 @@ maxs <- cellStats(rha.mbr, max)
 rha.mbr <- projectRaster(from=rha.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
 rha.mbr <- rha.mbr/cellStats(rha.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
 
+save_DVF(rha.mbr)
 
 # Mise à l'échelle du fond de carte par rapport à l'aire urbaine la plus grande: Paris
 
