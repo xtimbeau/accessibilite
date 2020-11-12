@@ -11,7 +11,7 @@ iso_accessibilite <- function(
   routing,                         # défini le moteur de routage
   tmax=10L,                        # en minutes
   pdt=1L,
-  chunk=1000000,                    # paquet envoyé
+  chunk=5000000,                    # paquet envoyé
   future=TRUE,                  
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE)
@@ -40,7 +40,7 @@ iso_accessibilite <- function(
   log_info("")
   log_info("tmax:{tmax}")
   log_info("pdt:{pdt}")
-  log_info("chunk:{chunk}")
+  log_info("chunk:{f2si2(chunk)}")
   log_info("resolution:{resolution}")
   log_info("future:{future}")
   log_info("out:{out}")

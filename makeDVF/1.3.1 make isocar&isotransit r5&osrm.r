@@ -41,7 +41,7 @@ walk(c("75", "91", "92", "93"), ~{
   save_DVF(rr, "isotr{res}r5d{.x}" %>% glue, rep="rda/iso75")})
 
 # la grande couronne en résolution 200 en attendant d'avoir le temps
-walk("94", ~{ # c("77", "78", "91", "95")
+walk(c("77", "78", "91","94" ,"95"), ~{
   message(.x)
   tr_r5 <- routing_setup_r5(
     path="{DVFdata}/r5r_data/IDFM" %>% glue, 
@@ -87,11 +87,9 @@ rr <- iso_accessibilite(
   resolution=50,                    
   tmax=90,                         
   pdt=5,                          
-  routing=car_osrm, chunk=1000000)
-
+  routing=car_r5)
 
 walk(depIdf, ~{
-  message(.x)
   rr <- iso_accessibilite(
     quoi=opp,                       
     ou=c200_idf %>% filter(dep==.x),                       
