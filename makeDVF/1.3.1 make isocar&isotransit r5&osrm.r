@@ -79,7 +79,16 @@ save_DVF(ttrr5_emp09)
 plan("multiprocess", workers=8)
 
 car_osrm <- routing_setup_osrm(server="5003", profile="driving")
-foot_osrm <- routing_setup_osrm(server="5001", profile="walk")
+foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
+
+rr <- iso_accessibilite(
+  quoi=opp,                       
+  ou=c200_idf %>% filter(dep=="75"),                       
+  resolution=50,                    
+  tmax=90,                         
+  pdt=5,                          
+  routing=car_osrm, chunk=1000000)
+
 
 walk(depIdf, ~{
   message(.x)

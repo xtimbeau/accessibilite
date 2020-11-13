@@ -115,8 +115,8 @@ sf <- osrmIsochrone(c(lon=2.448, lat=48.869), breaks=seq(5,30,1), res=100, retur
 m2 <- fdc+tm_shape(sf)+tm_fill(col="id", alpha=0.75)
 
 library(r5r)
-core_r5 <- setup_r5(data_path = "{DVFdata}/r5r_data/IDFM" %>% glue, verbose = FALSE)
-r1 <- r5_isochrone(lon=2.448, lat=48.869, resolution=200, r5_core =core_r5, mode=c("CAR"), temps_max=30)
+tr_r5 <- setup_r5(data_path = "{DVFdata}/r5r_data/IDFM" %>% glue, verbose = FALSE)
+r1 <- r5_isochrone(lon=2.448, lat=48.869, resolution=50, r5_core = tr_r5, mode=c("WALK"), temps_max=30)
 m1 <- fdc+tm_shape(r1)+tm_raster(style="cont", alpha=0.75)
 
 otpc <- OTP_server(router="IDF3", port=8100, memory = "8G", rep=DVFdata)

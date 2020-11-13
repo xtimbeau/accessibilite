@@ -1,4 +1,4 @@
-source("dvf.r")
+source("access.r")
 uu851 <- NULL
 iris15 <- load_DVF("iris15")
 uu851$iris <- iris15 %>% filter(UU2010=="00851") %>% st_union 
@@ -36,17 +36,31 @@ save_DVF(uu851)
 
 library(ceramic)
 
-username <- "xtimbeau"
-mapbox_key <- "pk.eyJ1IjoieHRpbWJlYXUiLCJhIjoiY2tnMHhiNnAwMGJyaTJzcXdqbXU1c3Y0MiJ9.ydGev8EOzUGtIUHeLlZqtQ"
-style_id <- "ckg2d9ypq0lzv19m8p6a7xqoi" # défini sur mon compte MapBox
-Sys.setenv(MAPBOX_API_KEY=mapbox_key)
+username <- "theophilegervais"
+mapbox_key <- "pk.eyJ1IjoidGhlb3BoaWxlZ2VydmFpcyIsImEiOiJja2gwZjY0N2YweGU0MnFudml6YmNoM2l4In0.jjY7QwYgIgAB7xHGHrT3ig"
+style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
+Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-idfplus <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+uuplus <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+st_crs(uuplus) <- st_crs("+proj=longlat +ellps=WGS84") 
 
-idf.mbr <- cc_location(loc=idfplus, zoom = 9,
-                 base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+uu851.mbr <- cc_location(loc=uuplus, zoom = 9,
+                       base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
 
-idf.mbfdc <- tm_shape(idf.mbr)+tm_rgb()
+maxs <- cellStats(uu851.mbr, max)
+uu851.mbr <- projectRaster(from=uu851.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
+uu851.mbr <- uu851.mbr/cellStats(uu851.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
 
-save_DVF(idf.mbfdc)
+# Mise à l'échelle du fond de carte par rapport à l'aire urbaine la plus grande: Paris
+
+iris15 <- load_DVF("iris15")
+uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union # Paris
+c_uu851 <- uu851 %>% st_centroid
+
+# les limites appliquées à Lyon sont la boite de l'aire urbaine de Paris translatée sur le centre de l'aire urbaine de Lyon
+bb851 <- st_bbox(uu851[[1]], crs=3035)
+
+uu851.mbfdc <- tm_shape(uu851.mbr, bbox = bb851)+tm_rgb()
+
+save_DVF(uu851.mbfdc)

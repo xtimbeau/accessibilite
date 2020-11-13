@@ -196,8 +196,6 @@ idINS3035 <- function(x, y, resolution=200)
   resultat
 }
 
-
-
 raster_ref <- function(sf, resolution) raster(xt_as_extent(sf), crs=st_crs(sf)$proj4string,  resolution=resolution)
 
 croppedRaster <- function(x, na.value = NA)
@@ -242,3 +240,12 @@ xt_as_extent <- function(sf) {
   extent(b$xmin, b$xmax, b$ymin, b$ymax)
 }
 
+r2dt <- function(raster)
+{
+  vars <- names(raster)
+  xy <- raster::coordinates(raster)
+  idINS <- idINS3035(xy[,1], xy[,2])
+  dt <- raster %>% as.data.frame %>% as.data.table
+  dt <- na.omit(dt[, `:=`(x=xy[,1], y=xy[,2], idINS=idINS)], cols=vars)
+  dt
+}

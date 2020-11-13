@@ -43,5 +43,13 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu758$border) %>% st_cr
 # Cartes isotime sur fond de carte
 
 isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
-                    tm_shape(ttr_r5_emp09_Lyon)+tm_raster(style="cont",palette=heatrg)+
-                    tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)
+                    tm_shape(ttr_r5_emp09_Lyon$to100k)+tm_raster(style="cont",palette=heatrg)+
+                    tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(isotime_Lyon, file="{DVFdata}/presentation/vv/isotime_Lyon" %>% glue)
+
+isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
+  tm_shape(ttr_r5_emp09_Lyon$to25k)+tm_raster(style="cont",palette=heatrg)+
+  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(isotime_Lyon, file="{DVFdata}/presentation/vv/isotime_Lyon 25k" %>% glue)

@@ -1,4 +1,4 @@
-# changement de l'algorithme
+# changement de l'algorithme 
 # la sélection des paires s'effectue au coeur du calcul et repose sur la majoration
 # par le calcul des distances entre les destinations du paquet
 
@@ -11,7 +11,7 @@ iso_accessibilite <- function(
   routing,                         # défini le moteur de routage
   tmax=10L,                        # en minutes
   pdt=1L,
-  chunk=10000,                    # paquet envoyé à r5
+  chunk=1000000,                    # paquet envoyé
   future=TRUE,                  
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE)
@@ -34,9 +34,6 @@ iso_accessibilite <- function(
   logfile <- "{DVFdata}/logs/iso_accessibilite.{routing$type}.{timestamp}.log" %>% glue
   # logfile <- function() stringr::str_c(logfile_s,future:::session_uuid()[[1]],".log")
   log_appender(appender_file(logfile))
-  
-  k <- if(!is.null(routing$n_threads)) routing$n_threads else 1
-  chunk <- chunk*k
   
   log_info("Calcul accessibilité version 2")
   log_info("{capture.output(show(routing))}")
@@ -82,18 +79,32 @@ iso_accessibilite <- function(
     ou=ou_4326, 
     quoi=quoi_4326,
     chunk=chunk,
-    mode=routing$mode,
+    routing=routing,
     tmax=tmax)
   
   ou_4326 <- groupes$ou
   ou_gr <- groupes$ou_gr
-  
-  log_info("{nrow(ou_4326)} pour ou, {nrow(quoi_4326)} pour quoi")
-  log_info("{length(ou_gr)} groupes de ou")
+  k <- groupes$subsampling
+  log_info("{f2si2(nrow(ou_4326))} ou, {f2si2(nrow(quoi_4326))} quoi")
+  log_info("{length(ou_gr)} groupes, {k} subsampling")
   
   message("...calcul des temps de parcours")
+  
+  pids <- future_map(1:nbrOfWorkers(), ~future:::session_uuid()[[1]])
+  
   if(routing$future&future)
-    map_fun <- function(x,y) furrr::future_map(x,y, .options=furrr_options(seed=TRUE, packages=c("data.table", "glue")))
+  {
+    lt <- log_threshold()
+    map_fun <- function(list,fun) 
+      furrr::future_map(
+        list, 
+        function(arg) {
+          log_threshold(lt)
+          logger::log_appender(appender_file(logfile))
+          fun(arg)
+          },
+        .options=furrr_options(seed=TRUE, packages=c("data.table")))
+  }
   else 
     map_fun <- purrr::map
   
@@ -105,8 +116,7 @@ iso_accessibilite <- function(
           ou_gr, 
           function(groupe) {
             pb()
-            if(routing$future&future) logger::log_appender(appender_file(logfile))
-            access_on_groupe(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out)
+            access_on_groupe(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids)
           }
         )
       )
@@ -318,22 +328,24 @@ iso_ou_4326 <- function(ou, res_ou)
   ou_4326
 } 
 
-iso_split_ou <- function(ou, quoi, chunk, mode="CAR", tmax=60) 
+iso_split_ou <- function(ou, quoi, chunk, routing, tmax=60) 
 {
   n <- 100
   mou <- ou[sample(.N, n), .(x,y)] %>% as.matrix
   mquoi <- quoi[, .(x,y)] %>% as.matrix
-  nquoi <- median(rowSums2(rdist::cdist(mou, mquoi) <= vmaxmode(mode)*tmax))
+  nquoi <- median(rowSums2(rdist::cdist(mou, mquoi) <= vmaxmode(routing$mode)*tmax))
 
   size <- as.numeric(nrow(ou))*as.numeric(nquoi)
   bbox <- matrix(c(xmax=max(ou$lon), xmin=min(ou$lon), ymax=max(ou$lat), ymin= min(ou$lat)), nrow=2)
   bbox <- sf_project(pts=bbox, from=st_crs(4326), to=st_crs(3035))
   surf <- (bbox[1,1]-bbox[2,1])*(bbox[1,2]-bbox[2,2])
-  
-  ngr <- min(max(8, round(size/chunk)), round(size/10)) # au moins 8 groupes, au plus des morceaux de 10
-  log_info("{ngr} groupes desires")
+  n_t <- if(is.null(routing$n_threads)) 1 else routing$n_threads
+  ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+  log_info("taille {f2si2(size)} {f2si2(ngr)} groupes desires")
   
   resolution <- 12.5*2^floor(max(0,log2(sqrt(surf/ngr)/12.5)))
+  
+  subsampling <- min(max(n_t,floor(resolution/(0.1*tmax*vmaxmode(routing$mode)))),8)
   
   log_info("resolution des groupes {resolution}")
   idINS <- idINS3035(ou$x, ou$y, resolution)
@@ -343,7 +355,7 @@ iso_split_ou <- function(ou, quoi, chunk, mode="CAR", tmax=60)
   out_ou[, `:=`(gr=idINS)]
   ou_gr <- set_names(as.character(unique(out_ou$gr)))
   
-  list(ou=out_ou, ou_gr=ou_gr, resINS=resolution)
+  list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
 }
 
 t_prudence <- function(routing, cell=1600)
@@ -436,7 +448,7 @@ ttm_on_closest <- function(ppou, s_ou, quoi, ttm_0, les_ou, tmax, routing, grdeo
     }
 }
 
-access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out)
+access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids)
 {
   s_ou <- ou_4326[gr==groupe, .(id, lon, lat, x, y)]
   
@@ -462,7 +474,6 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
       }
       
       # on filtre les cibles qui ne sont pas trop loin selon la distance euclidienne
-      
       quoi_f <- minimax_euclid(from=ttm_ou$les_ou, to=quoi_4326, dist=vmaxmode(routing$mode)*(tmax+delay))
       
       # distances entre les ancres et les cibles
@@ -508,7 +519,16 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           paires_fromId <- ttm[, .(npep=npep[[1]], npea=npea[[1]]), by=fromId]
           npea <- sum(paires_fromId$npea)
           npep <- sum(paires_fromId$npep)
-          speed_log <-str_c(length(pproches), " paquets ", f2si2(npea),"@",f2si2(npea/dtime),"p/s demandees, ",f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
+          cpid <- future:::session_uuid()[[1]]
+          if(cpid%in%pids) 
+            spid <- str_c("[",which(pids==cpid),"] ")
+          else
+            spid <- ""
+          speed_log <-str_c(spid,
+                            length(pproches),
+                            " paquets ", f2si2(npea),
+                            "@",f2si2(npea/dtime),"p/s demandees, ",
+                            f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
         
           if(!ttm_out)
           {         
@@ -575,12 +595,15 @@ minimax_euclid <- function(from, to, dist)
 
 iso_ttm <- function(o, d, tmax, routing)
 {
-  switch(routing$type,
+  log_debug("iso_ttm:{tmax} {nrow(o)} {nrow(d)}")
+  r <- switch(routing$type,
          "r5" = r5_ttm(o, d, tmax, routing),
          "otpv1" = otpv1_ttm(o, d, tmax, routing),
          "osrm" = osrm_ttm(o, d, tmax, routing),
          "dt"= dt_ttm(o, d, tmax, routing))
-}
+  log_debug("result:{nrow(r$result)}")
+  r
+  }
 
 safe_ttm <- function(routing)
 {
@@ -833,4 +856,71 @@ routing_setup_osrm <- function(
                 driving="CAR",
                 walk="WALK",
                 bike="BIKE"))
+}
+
+# Illustrations---------------------
+
+r5_isochrone <- function(lon, lat,                         # en coordonnées lon, lat
+                         resolution= 50,
+                         r5_core,                      # pointeur sur le core r5 utilisé ou chemin vers le dosssier
+                         mode=c("WALK", "TRANSIT"),    # TRANSIT, CAR, WALK etc...
+                         date="17-12-2019 8:00:00",    # au format = "%d-%m-%Y %H:%M:%S"
+                         max_walk_dist=2000,           # en mètres
+                         temps_max=10L,                # en minutes
+                         time_window=1L,
+                         montecarlo=1L,
+                         plot=FALSE,
+                         nthreads=parallel::detectCores(logical=FALSE))
+{
+  tic()
+
+  if(is.character(r5_core)) {
+    Message("Lecture du schéma géographique")
+    core <- setup_r5(data_path =r5_core)
+  }
+  
+  else core <- r5_core
+  assertthat::assert_that("jobjRef"%in% class(core))
+  
+  r5_core$setNumberOfMonteCarloDraws(as.integer(montecarlo))
+  
+  vitesse <- vmaxmode(mode)
+  
+  origin  <- tibble(lon=lon, lat=lat, id="1")
+  
+  origin_sf <- origin %>% st_as_sf(coords=c("lon", "lat"), crs=4326)
+  destination_sf <- origin_sf %>%  st_transform(3035) %>% st_buffer(temps_max*vitesse)
+  destination <- fasterize(destination_sf, raster_ref(destination_sf, resolution), fun="any")
+  xy <- raster::xyFromCell(destination, which(raster::values(destination) == 1)) 
+  xy_4326 <- sf_project(pts=xy,from=st_crs(3035), to=st_crs(4326))
+  destinations <- data.table(lon=xy_4326[,1], lat=xy_4326[,2],
+                             x = xy[,1], y=xy[,2],
+                             id=as.character(1:nrow(xy)))
+  
+  ttm <- travel_time_matrix(core,
+                            origins = origin,
+                            destinations = destinations,
+                            mode=mode,
+                            departure_datetime = as.POSIXct(date, format = "%d-%m-%Y %H:%M:%S"),
+                            max_walk_dist = max_walk_dist,
+                            max_trip_duration = temps_max+1,
+                            time_window = as.integer(time_window),
+                            percentiles = 50L,
+                            walk_speed = 3.6,
+                            bike_speed = 12,
+                            max_rides = 3,
+                            n_threads = nthreads)
+  if(nrow(ttm)>0)
+  {
+    ttm <- merge(ttm, destinations, by.x="toId", by.y="id", all.x=TRUE)
+    raster <- rasterize(cbind(ttm$x, ttm$y), destination, field=ttm$travel_time)
+  }
+  if(plot)
+  {
+    map <- 
+      tm_shape(tmaptools::read_osm(destination_sf, type="osm"))+tm_rgb(saturation = 0)+
+      tm_shape(raster)+tm_raster(style="cont", palette=heatvb, alpha=0.5)
+    print(map)
+  }
+  invisible(raster)
 }
