@@ -74,6 +74,7 @@ maxs <- cellStats(nrdcal.mbr, max)
 nrdcal.mbr <- projectRaster(from=nrdcal.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
 nrdcal.mbr <- nrdcal.mbr/cellStats(nrdcal.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
 
+save_DVF(nrdcal.mbr)
 
 # Mise à l'échelle du fond de carte par rapport à l'aire urbaine la plus grande: Paris
 

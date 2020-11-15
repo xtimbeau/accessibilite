@@ -3,7 +3,7 @@ source("access.r")
 c200 <- load_DVF("c200")
 iris15 <- load_DVF("iris15")
 uu59702 <- iris15 %>% filter(UU2010=="59702") %>% st_union()
-uu59702plus20 <- uu59702 %>% st_buffer(20000)
+uu59702plus8 <- uu59702 %>% st_buffer(8000)
 c200_59702 <- c200 %>% filter(st_within(., uu59702, sparse=FALSE))
 
 rmax <- sqrt(as.numeric(st_area(uu59702))/pi)

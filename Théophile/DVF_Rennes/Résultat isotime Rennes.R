@@ -3,6 +3,7 @@ source("access.r")
 bre.mbr <- load_DVF("bre.mbr")
 iris15 <- load_DVF("iris15")
 ttr_r5_emp09_Rennes <- load_DVF("ttr_r5_emp09_Rennes")
+tcar_osrm_emp09_Rennes <- load_DVF("tcar_osrm_emp09_Rennes")
 
 # Construction bb33701
 
@@ -42,6 +43,10 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu35701$border) %>% st_
 
 # Cartes isotime sur fond de carte
 
-isotime_Rennes <- tm_shape(bre.mbr,bbox=bb35701)+tm_rgb()+
-                    tm_shape(ttr_r5_emp09_Rennes)+tm_raster(style="cont",palette=heatrg)+
-                    tm_shape(riv,bbox=uu35701$bbox)+tm_fill("dodgerblue",alpha=1)
+isotime_r5_emp09_Rennes <- tm_shape(bre.mbr,bbox=bb35701)+tm_rgb()+
+                           tm_shape(ttr_r5_emp09_Rennes)+tm_raster(style="cont",palette=heatrg)+
+                           tm_shape(riv,bbox=uu35701$bbox)+tm_fill("dodgerblue",alpha=1)
+
+isotime_osrm_emp09_Rennes <- tm_shape(bre.mbr,bbox=bb35701)+tm_rgb()+
+                             tm_shape(tcar_osrm_emp09_Rennes)+tm_raster(style="cont",palette=heatrg)+
+                             tm_shape(riv,bbox=uu35701$bbox)+tm_fill("dodgerblue",alpha=1)

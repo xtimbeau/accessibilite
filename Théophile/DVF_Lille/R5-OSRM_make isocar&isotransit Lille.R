@@ -7,7 +7,7 @@ plan("multiprocess", workers=8)
 iris15 <- load_DVF("iris15")
 
 # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
-nrdcal <- iris15 %>%  filter(UU2010=="59702") %>% st_buffer(20000) %>% st_union
+nrdcal <- iris15 %>%  filter(UU2010=="59702") %>% st_buffer(8000) %>% st_union
 uu59702 <- iris15 %>% filter(UU2010=="59702") %>% st_union
 iris15_nrdcal <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,nrdcal, sparse=FALSE)) %>% st_centroid()
 
