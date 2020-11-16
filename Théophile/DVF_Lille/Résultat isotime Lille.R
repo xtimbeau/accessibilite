@@ -3,6 +3,7 @@ source("access.r")
 nrdcal.mbr <- load_DVF("nrdcal.mbr")
 iris15 <- load_DVF("iris15")
 ttr_r5_emp09_Lille <- load_DVF("ttr_r5_emp09_Lille")
+tcar_osrm_emp09_Lille <- load_DVF("tcar_osrm_emp09_Lille")
 
 # Construction bb33701
 
@@ -43,6 +44,9 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu59702$border) %>% st_
 # Cartes isotime sur fond de carte
 
 ttr_r5_emp09_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
-                    tm_shape(ttr_r5_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
-                    tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
- 
+                              tm_shape(ttr_r5_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
+                              tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+
+tcar_osrm_emp09_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
+                                 tm_shape(tcar_osrm_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
+                                 tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)

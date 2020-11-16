@@ -2,22 +2,24 @@ source("access.r")
 
 # utile pour OSRM
 plan("multiprocess", workers=8)
-plan(multisession, workers=8) # pour remettre les workers à 0 
+plan(multisession, workers=8) # pour remettre les workers à 0 en cas de bug
 
 # source des données d'opportunité
 iris15 <- load_DVF("iris15")
 
 # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
-paca_nice <- iris15 %>% filter(UU2010=="06701") %>% st_buffer(10000) %>% st_union
-UU06701 <- iris15 %>% filter(UU2010=="06701") %>% st_union
-iris15_paca_nice <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,paca_nice, sparse=FALSE))
+paca <- iris15 %>% filter(UU2010=="06701") %>% st_buffer(10000) %>% st_union
+uu06701 <- iris15 %>% filter(UU2010=="06701") %>% st_union
+iris15_paca <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(., paca, sparse=FALSE)) %>% st_centroid()
 
 # carreaux sélectionnés pour le calcul de la grille
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
 
-c200Nice_Paca <- load_DVF("c200Nice_Paca") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
-c200_paca_nice <- c200Nice_Paca %>% filter(st_within(., paca_nice, sparse=FALSE)) # Montreuil
+c200 <- load_DVF("c200") 
+c200_06701 <- c200 %>% filter(st_within(., uu06701, sparse=FALSE))
+
+rm(c200, iris15)
 
 # Moteur r5, en voiture ou en transit
 # attention la voiture est lente, surout pour des temps importants
@@ -26,8 +28,8 @@ car_r5_Nice <- routing_setup_r5(path="{DVFdata}/r5r_data/Nice/r5" %>% glue, mode
 tr_r5_Nice <- routing_setup_r5(path="{DVFdata}/r5r_data/Nice/r5" %>% glue, mode=c("WALK", "TRANSIT"),
                                time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
 
-iso_transit_50_r5_Nice <- iso_accessibilite2(quoi=iris15_paca_nice, # les variables d'opportunité
-                                       ou=c200_paca_nice, # la grille cible (plus long sur c200 que sur c200_mt)
+iso_transit_50_r5_Nice <- iso_accessibilite(quoi=iris15_paca, # les variables d'opportunité
+                                       ou=c200_06701, # la grille cible (plus long sur c200 que sur c200_mt)
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=60, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute
