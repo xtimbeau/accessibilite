@@ -5,8 +5,7 @@ message("Packages")
 options("rgdal_show_exportToProj4_warnings"="none")
 
 dvfpackages <- c(
-   "matrixStats",
-   "RhpcBLASctl",
+  "matrixStats", "RhpcBLASctl",
   "rgdal", "rgeos", "raster", "fasterize", "sf", "geojsonsf",
   "leaflet", "leaflet.extras", "rdist",
   "tmap", "tmaptools",  "mapview",
@@ -74,7 +73,7 @@ depIdf <- c("75", "77", "78", "91", "92", "93", "94", "95")
 red2gray <- colorspace::sequential_hcl(n = 50, h = c(15, 30), c = c(180, 90, 0), l = c(25, 100), power = c(1.5, 1.5), register = "red2gray", rev=TRUE)
 green2gray <- colorspace::sequential_hcl(n = 50, h = c(115, 115), c = c(180, 90, 0), l = c(35, 100), power = c(2.25, 2.25), register = "green2gray", rev=TRUE)
 blue2gray <- colorspace::sequential_hcl(n = 50, h = c(260, 220), c = c(180, 90, 0), l = c(30, 100), power = c(1.25, 1.25), register = "blue2gray", rev=TRUE)
-heatrg <- colorspace::sequential_hcl(n = 50, h = c(15, 140), c = c(180, 180, 120), l = c(25, 100), power = c(1, 2.5), register = "heatrg", rev=TRUE)
+heatrg <- colorspace::sequential_hcl(n = 50, h = c(-50, 180), c = c(60, 180, 20), l = c(30, 100), power = c(0.7, 1.5), register = "heatrg", rev=TRUE)
 heatbg <- colorspace::sequential_hcl(n = 50, h = c(300, 200), c = c(150, 180, 0), l = c(25, 95), power = c(1, 2.5), register = "heatbg", rev=TRUE)
 heatvb <- colorspace::sequential_hcl(n = 50, h = c(280, 210), c = c(180, 90, 0), l = c(30, 95), power = c(1,0.75), register = "heatvb", rev=TRUE)
 
@@ -89,7 +88,4 @@ if (GD=="") GD <- "G:/Mon Drive"
 DVFdata <- "{GD}/DVFdata" %>% glue
 # répertoire local
 localdata <- "{LD}/DVF" %>% glue
-# fdc_uu851 <- load_DVF("uu851")
-# uu851.fdc <- fdc_uu851$fdc
-# uu851.hdc <- fdc_uu851$hdc
-# bb851 <- fdc_uu851$bbox
+fdc851 <- load_DVF("uu851")

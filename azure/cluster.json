@@ -1,24 +1,25 @@
 {
-  "name": "myPoolName",
-  "vmSize": "Standard_D2_v2",
+  "name": "r5r_E4v3",
+  "vmSize": "Standard_E4_v3",
   "maxTasksPerNode": 1,
   "poolSize": {
     "dedicatedNodes": {
-      "min": 3,
-      "max": 3
+      "min": 0,
+      "max": 0
     },
     "lowPriorityNodes": {
-      "min": 3,
-      "max": 3
+      "min": 1,
+      "max": 4
     },
     "autoscaleFormula": "QUEUE"
   },
-  "containerImage": "xaviertimbeau/r5r:0.1",
+  "containerImage": "xaviertimbeau/r5r:latest",
   "rPackages": {
     "cran": [],
     "github": [],
     "bioconductor": []
   },
-  "commandLine": [],
+  "commandLine": []
+,
   "subnetId": ""
 }

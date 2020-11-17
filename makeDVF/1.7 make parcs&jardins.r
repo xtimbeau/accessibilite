@@ -5,6 +5,10 @@ source("access.r")
 
 c200_idf <- load_DVF("c200idf") %>% st_transform(3035)
 jardins <- st_read("{DVFdata}//fdCartes//espaces verts//espaces verts.shp" %>%  glue) %>% st_transform(3035)
+
+ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
+ecomos_idf <- ecomos %>% filter(!clc6%in%c(231114, 332202 , 0)) %>% filter(st_within(., uu851$iris %>% st_union %>% st_buffer(2000), sparse=FALSE))
+
 iris15 <- load_DVF("iris15")
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union
 c200_idf <- c200_idf %>% filter(st_within(., uu851, sparse=FALSE))
@@ -83,16 +87,27 @@ save_DVF(raster_parcsetjardins_50)
 plan(multisession, workers=8)
 foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
 
-# OSRM, 5h pour l'idf
-iso_f_petj_50_osrm <- iso_accessibilite2(
+# OSRM parcs et jardins, 6h pour l'idf
+iso_f_petj_50_osrm <- iso_accessibilite(
   quoi=jardins %>% transmute(c=1),
-  ou=c200_75,                       
+  ou=c200_idf,                       
   resolution=50,                    
-  tmax=15,                         
+  tmax=20,                         
   pdt=1,                          
   routing=foot_osrm)
 
 save_DVF(iso_f_petj_50_osrm)
+
+# OSRM ecomos pour l'idf
+iso_f_ecomos_50_osrm <- iso_accessibilite(
+  quoi=ecomos_idf %>% transmute(c=1),
+  ou=c200_idf,                       
+  resolution=50,                    
+  tmax=20,                         
+  pdt=1,                          
+  routing=foot_osrm)
+
+save_DVF(iso_f_ecomos_50_osrm)
 
 # R5, 2j!
 foot_r5 <- routing_setup_r5(

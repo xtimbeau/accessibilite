@@ -1,4 +1,5 @@
 source("access.r")
+# init ----------------------
 plan(sequential)
 c200 <- load_DVF("c200") %>% st_transform(3035)
 iris15 <- load_DVF("iris15")
@@ -12,7 +13,7 @@ opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
 
-# Calcul de la carte transport en commun r5 ------------------------------------------
+# transit r5 ------------------------------------------
 tr_r5 <- routing_setup_r5(
   path="{DVFdata}/r5r_data/IDFM" %>% glue, 
   mode=c("WALK", "TRANSIT"),
@@ -74,47 +75,7 @@ save_DVF(iso_tr_50_r5)
 ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(ttrr5_emp09)
 
-# Calcul de la carte voiture OSRM ------------------------------------------------------
-
-plan("multiprocess", workers=8)
-
-car_osrm <- routing_setup_osrm(server="5003", profile="driving")
-foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
-
-rr <- iso_accessibilite(
-  quoi=opp,                       
-  ou=c200_idf %>% filter(dep=="75"),                       
-  resolution=50,                    
-  tmax=90,                         
-  pdt=5,                          
-  routing=car_r5)
-
-walk(depIdf, ~{
-  rr <- iso_accessibilite(
-    quoi=opp,                       
-    ou=c200_idf %>% filter(dep==.x),                       
-    resolution=50,                    
-    tmax=90,                         
-    pdt=5,                          
-    routing=car_osrm)
-  save_DVF(rr, "isocar50osrmd{.x}" %>% glue, rep="rda/iso75")})               
-
-isos_car <- map(depIdf, ~load_DVF("iso75/isocar50osrmd{.x}"))
-
-iso_car_50_osrm <-list(
-  EMP09 = do.call(raster::merge, map(isos_car, "EMP09")),
-  P15_POP = do.call(raster::merge, map(isos_car, "P15_POP")),
-  cste = do.call(raster::merge, map(isos_car, "cste")))
-
-names(iso_car_50_osrm$EMP09) <- names(isos_car[[1]]$EMP09)
-names(iso_car_50_osrm$P15_POP) <- names(isos_car[[1]]$P15_POP)
-names(iso_car_50_osrm$cste) <- names(isos_car[[1]]$cste)
-save_DVF(iso_car_50_osrm)
-
-tcarosrm_emp09 <- iso2time(iso_car_50_osrm$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
-save_DVF(tcarosrm_emp09)
-
-# Calcul de GPE transport en commun ------------------------------------------------------
+# transit GPE r5------------------------------------------------------
 
 trGPE_r5 <- routing_setup_r5(path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, mode=c("WALK", "TRANSIT"),
                              time_window=60,
@@ -136,3 +97,23 @@ tGPEr5_emp09 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(100000,250000,500000,100
 save_DVF(tGPEr5_emp09)
 
 save_DVF(ttrGPEr5_emp09)
+# voiture OSRM ------------------------------------------------------
+
+plan("multiprocess", workers=8)
+
+car_osrm <- routing_setup_osrm(server="5003", profile="driving")
+foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
+
+
+iso_car_50_osrm_idf <- iso_accessibilite(
+  quoi=opp,                       
+  ou=c200_idf,                       
+  resolution=50,                    
+  tmax=120,                         
+  pdt=5,                          
+  routing=car_osrm)
+save_DVF(iso_car_50_osrm_idf, rep="rda")               
+
+tcarosrm_emp09 <- iso2time(iso_car_50_osrm_idf$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
+save_DVF(tcarosrm_emp09)
+m_idf <- uu851$mbfdc+tm_shape(tcarosrm_emp09$to4M)+tm_raster(style="cont", palette=heatrg)+uu851$hdc

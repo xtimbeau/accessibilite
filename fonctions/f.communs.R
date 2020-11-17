@@ -248,7 +248,7 @@ list.unbrace <- function(x)
 
 tabl <- function(data, var)
 {
-  data %>% as_tibble %>% transmute("{{var}}" := {{var}}) %>% table(useNA="ifany")
+  data %>% as_tibble() %>% transmute("{{var}}" := {{var}}) %>% table(useNA="ifany")
 }
 
 f2si2<-function (number,rounding=TRUE, digits=1) 
@@ -305,3 +305,15 @@ pmemuse <- function (...)
   unit <- memuse::mu.unit(current)
   glue::glue("{signif(size, 2)}{unit}>")
 }
+
+apply_consistent_y_lims <- function(this_plot){
+  num_plots <- length(this_plot$layers)
+  if(num_plots>1) {
+    y_lims <- lapply(1:num_plots, function(x) ggplot_build(this_plot[[x]])$layout$panel_scales_y[[1]]$range$range)
+    min_y <- min(unlist(y_lims))
+    max_y <- max(unlist(y_lims))
+    this_plot & ylim(min_y, max_y)
+  }
+  else
+    this_plot
+} 

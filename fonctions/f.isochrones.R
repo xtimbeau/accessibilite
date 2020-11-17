@@ -697,18 +697,6 @@ future_kernel_polychronique <- function (on_pos, sfdata, var, minutes=c(5,10,15)
   return(out)
 }
 
-raster_ref <- function(sf, resolution) raster(xt_as_extent(sf), crs=st_crs(sf)$proj4string,  resolution=resolution)
-
-raster_max <- function(sf1, sf2, resolution=200) {
-  b1 <- st_bbox(sf1)
-  b2 <- st_bbox(sf2 %>% st_transform(st_crs(sf1)))
-  bb <- st_bbox(c(xmin = min(b1$xmin, b2$xmin),
-                  xmax = max(b1$xmax, b2$xmax),
-                  ymax = max(b1$ymax, b2$ymax),
-                  ymin = min(b1$ymin, b2$ymin)),
-                crs = st_crs(sf1))
-  raster_ref(bb, resolution=resolution)}
-
 # nouvelle version de l'aggrègateur d'isochrone è partir de Rcpp
 
 aggr_isochrone_rcpp <- function (positions, param, grid, progress = FALSE, timing = FALSE) {

@@ -2,10 +2,9 @@ source("access.r")
 uu851 <- NULL
 iris15 <- load_DVF("iris15")
 uu851$iris <- iris15 %>% filter(UU2010=="00851") %>% st_union 
+
 cidf <- load_DVF("cidf") %>% st_transform(3035)
-
 didf <- cidf %>% group_by(DEP) %>% summarize()
-
 uu851$depsf <- didf
 
 uu851$border <- cidf %>%
@@ -16,7 +15,7 @@ uu851$border <- cidf %>%
               unique)) %>%
   st_union
 
-uu851$bbox <- st_bbox(uu851$border)
+uu851$bbox <- st_bbox(uu851$iris)
 
 riv <- st_read("{DVFdata}/fdCartes/elthydrosurface/EltHydroSurface_FXX.shp" %>% glue) %>%
   st_transform(3035)
@@ -29,8 +28,6 @@ uu851$fdc <- tm_shape(uu851$border, bbox = uu851$bbox ) +
 uu851$hdc <- tm_shape(didf, bbox = uu851$bbox ) +
   tm_borders(lwd = 0.25, col = "gray50") +
   tm_shape(riv, bbox=uu851$bbox ) + tm_fill("dodgerblue", aplha=1)
-
-save_DVF(uu851)
 
 # fonds de cartes de Mapbox------------------
 
@@ -45,22 +42,15 @@ iris15 <- load_DVF("iris15")
 uuplus <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
 st_crs(uuplus) <- st_crs("+proj=longlat +ellps=WGS84") 
 
-uu851.mbr <- cc_location(loc=uuplus, zoom = 9,
+mbr <- cc_location(loc=uuplus, zoom = 9,
                        base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
 
-maxs <- cellStats(uu851.mbr, max)
-uu851.mbr <- projectRaster(from=uu851.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
-uu851.mbr <- uu851.mbr/cellStats(uu851.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
-
-# Mise à l'échelle du fond de carte par rapport à l'aire urbaine la plus grande: Paris
-
-iris15 <- load_DVF("iris15")
-uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union # Paris
-c_uu851 <- uu851 %>% st_centroid
+maxs <- cellStats(mbr, max)
+mbr <- projectRaster(from=mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
+mbr <- mbr/cellStats(mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
 
 # les limites appliquées à Lyon sont la boite de l'aire urbaine de Paris translatée sur le centre de l'aire urbaine de Lyon
-bb851 <- st_bbox(uu851[[1]], crs=3035)
 
-uu851.mbfdc <- tm_shape(uu851.mbr, bbox = bb851)+tm_rgb()
+uu851$mbfdc <- tm_shape(mbr, bbox = uu851$bbox)+tm_rgb()
 
-save_DVF(uu851.mbfdc)
+save_DVF(uu851)

@@ -185,11 +185,16 @@ point_on_idINS <- function(sf_point, resolution=200)
   idINS3035(xy[,1], xy[,2])
 }
 
-idINS3035 <- function(x, y, resolution=200)
+idINS3035 <- function(x, y=NULL, resolution=200)
 {
+  if(is.null(y))
+  {
+    y <- x[,2]
+    x <- x[,1]
+    }
   x <- floor(x / resolution )*resolution
   y <- floor(y / resolution )*resolution
-  resultat <- str_c("N", y, "E", x)
+  resultat <- stringr::str_c("N", y, "E", x)
   nas <- which(is.na(y)|is.na(x))
   if (length(nas)>0)
     resultat[nas] <- NA
@@ -249,3 +254,19 @@ r2dt <- function(raster)
   dt <- na.omit(dt[, `:=`(x=xy[,1], y=xy[,2], idINS=idINS)], cols=vars)
   dt
 }
+
+raster_ref <- function(sf, resolution) 
+{
+  raster(xt_as_extent(sf), crs=st_crs(sf)$proj4string,  resolution=resolution)
+  }
+
+raster_max <- function(sf1, sf2, resolution=200) {
+  b1 <- st_bbox(sf1)
+  b2 <- st_bbox(sf2 %>% st_transform(st_crs(sf1)))
+  bb <- st_bbox(c(xmin = min(b1$xmin, b2$xmin),
+                  xmax = max(b1$xmax, b2$xmax),
+                  ymax = max(b1$ymax, b2$ymax),
+                  ymin = min(b1$ymin, b2$ymin)),
+                crs = st_crs(sf1))
+  raster_ref(bb, resolution=resolution)}
+

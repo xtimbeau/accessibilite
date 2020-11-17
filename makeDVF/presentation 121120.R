@@ -25,22 +25,42 @@ save_DVF(ttrr5_emp09_200, rep="rda/iso200")
 
 #transit
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
-uu851.mbfdc <- load_DVF("uu851.mbfdc")
-fdc851 <- load_DVF("uu851")
-m_idf <- uu851.mbfdc+
+uu851 <- load_DVF("uu851")
+m_idf <- uu851$mbfdc+
   tm_shape(ttrr5_emp09_200$to100k)+
   tm_raster(style="cont", palette=heatrg)+
-  fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
+  uu851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
 graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 200" %>% glue)
-m_idf <- uu851.mbfdc+
+m_idf <- uu851$mbfdc+
   tm_shape(ttrr5_emp09_200$to25k)+
   tm_raster(style="cont", palette=heatrg)+
-  fdc851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
+  uu851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
 graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 25k" %>% glue)
 
+ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 
+ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 idf_dt <- r2dt(ttrr5_emp09_200)
-idf_dt <- merge(dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
+idf_dt <- merge(idf_dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
+Nidf <- idf_dt[, sum(Ind)]
+idf <- ggplot(idf_dt, aes(x=to25k, y=..density..*Nidf, weight=Ind))+geom_density()
+
+ttrr5_emp09_lyon <- load_DVF("ttr_r5_emp09_Lyon")
+ttrr5_emp09_lyon <- aggregate(ttrr5_emp09_lyon, 4)
+lyon_dt <- r2dt(ttrr5_emp09_lyon)
+lyon_dt <- merge(lyon_dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
+Nlyon <- lyon_dt[, sum(Ind)]
+
+# méthode 1, 2 graphs
+idf <- ggplot(idf_dt, aes(x=to25k, y=..density..*Nidf, weight=Ind))+geom_density()
+lyon <- ggplot(lyon_dt, aes(x=to25k, y=..density..*Nlyon, weight=Ind))+geom_density()
+idf+lyon
+
+#méthode 2; 1 seul graphe avec la ville comme groupe
+data <- rbind(idf_dt[, .(dist=to25k,Ind, ville="idf")], lyon_dt[, .(dist=to25k,Ind, ville="lyon")])
+data <- data[, ind_grp:=sum(Ind), by=ville]
+nind <- data[, sum(Ind)]
+ggplot(data, aes(x=dist,y=..ndensity.., weight=Ind, group=ville))+geom_density(alpha=0.5)+facet_wrap(~ville)
 
 #distance par buffer
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union()
@@ -79,6 +99,7 @@ dist_c <- ggplot(idf_dt[, .(Ind=sum(Ind)), by="d_c_bin"], aes(x=d_c_bin, y=Ind))
 graph2svg(dist_c, file="{DVFdata}/presentation/vv/idf_d_c" %>% glue)
 
 #distance transit
+
 bb <- seq(0,90,2)
 idf_dt[, d_buf_bin:=bb[findInterval(to100k, vec=bb)]]
 dist_tt <- ggplot(idf_dt[, .(Ind=sum(Ind)), by="d_buf_bin"], aes(x=d_buf_bin, y=Ind))+
@@ -155,7 +176,7 @@ graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_tcaremp09 200" %>% glue)
 
 # graphique en distance
 idf_dt <- r2dt(ttrr5_emp09_200)
-idf_dt <- merge(dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
+idf_dt <- merge(idf_dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
 
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union()
 uu851plus20 <- uu851 %>% st_buffer(20000)
