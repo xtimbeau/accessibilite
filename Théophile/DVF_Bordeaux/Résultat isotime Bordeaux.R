@@ -3,6 +3,7 @@ source("access.r")
 aqui.mbr <- load_DVF("aqui.mbr")
 iris15 <- load_DVF("iris15")
 ttr_r5_emp09_Bordeaux <- load_DVF("ttr_r5_emp09_Bordeaux")
+tcar_osrm_emp09_Bordeaux <- load_DVF("tcar_osrm_emp09_Bordeaux")
 
 # Construction bb33701
 
@@ -42,14 +43,10 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu33701$border) %>% st_
 
 # Cartes isotime sur fond de carte
 
-isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
-                    tm_shape(ttr_r5_emp09_Bordeaux$to100k)+tm_raster(style="cont",palette=heatrg)+
-                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)+
-  tm_layout(legend.title.size = 2, legend.text.size = 2)
-graph2svg(isotime_Bordeaux, file="{DVFdata}/presentation/vv/isotime_Bordeaux" %>% glue)
+isotime_r5_emp09_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
+                    tm_shape(ttr_r5_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
+                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
 
-isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
-  tm_shape(ttr_r5_emp09_Bordeaux$to25k)+tm_raster(style="cont",palette=heatrg)+
-  tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)+
-  tm_layout(legend.title.size = 2, legend.text.size = 2)
-graph2svg(isotime_Bordeaux, file="{DVFdata}/presentation/vv/isotime_Bordeaux 25k" %>% glue)
+isotime_osrm_emp09_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
+                               tm_shape(tcar_osrm_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
+                               tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)

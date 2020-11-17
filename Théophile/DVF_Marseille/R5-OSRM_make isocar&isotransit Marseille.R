@@ -51,8 +51,8 @@ tm_shape(iso_transit_50_r5_Marseille$EMP09)+tm_raster(style="cont", palette=heat
 car_osrm_Marseille <- routing_setup_osrm(server="5002", profile="driving")
 foot_osrm_Marseille <- routing_setup_osrm(server="5001", profile="walk")
 
-iso_car_50_osrm_Marseille <- iso_accessibilite2(quoi=iris15_paca, # les variables d'opportunité
-                                       ou=c200_paca, # la grille cible
+iso_car_50_osrm_Marseille <- iso_accessibilite(quoi=iris15_paca, # les variables d'opportunité
+                                       ou=c200_759, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=90, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute

@@ -14,16 +14,6 @@ isotimes_Bordeaux <- names(norm_tr_Bordeaux) %>% str_extract("[:digit:]+") %>% a
 
 ttr_r5_emp09_Bordeaux <- iso2time(iso_transit_50_r5_Bordeaux$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000))
 
-# inutile?
-ttr_emp09_10_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
-ttr_emp09_15_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
-ttr_emp09_20_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
-ttr_emp09_25_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.25))
-ttr_emp09_30_Bordeaux <- calc(norm_tr_Bordeaux, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.3))
-
-ttr_r5_emp09_Bordeaux <- brick(list(ttr_emp09_10_Bordeaux, ttr_emp09_15_Bordeaux, ttr_emp09_20_Bordeaux, ttr_emp09_25_Bordeaux, ttr_emp09_30_Bordeaux))
-names(ttr_emp09_Bordeaux) <- c("emp10_Bordeaux", "emp15_Bordeaux", "emp20_Bordeaux", "emp25_Bordeaux", "emp30_Bordeaux")
-# fin inutile?
 
 save_DVF(ttr_r5_emp09_Bordeaux)
 
@@ -43,23 +33,18 @@ names(ttr_pop15_Bordeaux) <- c("pop10_Bordeaux", "pop15_Bordeaux", "pop20_Bordea
 
 save_DVF(ttr_pop15_Bordeaux)
 
-# car ------------------
+# car emp09------------------
 
-iso_car_50 <- load_DVF("iso_car_50")
+iso_car_50_osrm_Bordeaux <- load_DVF("iso_car_50_osrm_Bordeaux")
 
-norm_car <- iso_car_50$bricks$EMP09/iso_car_50$vars$EMP09
-isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
+norm_car_Bordeaux <- iso_car_50_osrm_Bordeaux$bricks$EMP09/iso_car_50_osrm_Bordeaux$vars$EMP09
+isotimes_Bordeaux <- names(norm_car_Bordeaux) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_emp09_10 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
-tcar_emp09_15 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
-tcar_emp09_20 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
-tcar_emp09_25 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.25))
-tcar_emp09_30 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.3))
+tcar_osrm_emp09_Bordeaux <- iso2time(iso_car_50_osrm_Bordeaux$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,350000,400000,450000,500000))
 
-tcar_emp09 <- brick(list(tcar_emp09_10, tcar_emp09_15, tcar_emp09_20, tcar_emp09_25, tcar_emp09_30))
-names(tcar_emp09) <- c("emp10", "emp15", "emp20", "emp25", "emp30")
+save_DVF(tcar_osrm_emp09_Bordeaux)
 
-save_DVF(tcar_emp09)
+# car P15_POP
 
 norm_car <- iso_car_50$bricks$P15_POP/iso_car_50$vars$P15_POP
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()

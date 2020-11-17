@@ -1,11 +1,21 @@
-source("dvf.r")
+source("access.r")
+
 cfr <- st_read("{DVFdata}/communes/communes.shp" %>% glue, stringsAsFactors=FALSE)
-st_crs(cfr) <- 2154 #projection lambert 93 standard
+st_crs(cfr) <- 2154 
 cfr <- st_transform(cfr, 2154)
 names(cfr)[1]<-"insee"
 cfr %<>% mutate(DEP = str_sub(cfr$insee,1,2))
-depLgdrous <- c("32","31","82","81")
-clgdrous <- cfr %>% filter(DEP %in% depLgdrous)
+
+iris15 <- load_DVF("iris15")
+c200 <- load_DVF("c200")
+
+uu31701 <- iris15 %>% filter(UU2010=="31701") %>% st_union()
+c200_31701 <- c200 %>% filter(st_within(., uu31701, sparse=FALSE))
+c200_31701 %<>% st_transform(3035) %>% st_as_sf
+uu31701plus20 <- uu31701 %>% st_buffer(20000)
+c200_lgdrous <- c200_31701 %>% filter(st_within(., uu31701plus20, sparse=FALSE))
+
+clgdrous <- cfr %>% filter(DEP %in% c200_lgdrous)
 dlgdrous <- clgdrous %>% group_by(DEP) %>% summarize()
 
 save_DVF(dlgdrous)
@@ -54,11 +64,17 @@ style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
 Sys.setenv(MAPBOX_API_KEY= mapbox_key)
 
 iris15 <- load_DVF("iris15")
-lgdrousplus <- iris15 %>% filter(UU2010=="31701") %>% st_buffer(10000) %>% st_union %>% st_transform(4326)
+lgdrousplus <- iris15 %>% filter(UU2010=="31701") %>% st_buffer(35000) %>% st_union %>% st_transform(4326)
 st_crs(lgdrousplus) <- st_crs("+proj=longlat +ellps=WGS84")
 
 lgdrous.mbr <- cc_location(loc=lgdrousplus, zoom = 9,
                         base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+
+maxs <- cellStats(lgdrous.mbr, max)
+lgdrous.mbr <- projectRaster(from=lgdrous.mbr, crs=CRS("EPSG:3035")) # la projection fait un truc bizarre sur les entiers
+lgdrous.mbr <- lgdrous.mbr/cellStats(lgdrous.mbr, max)*maxs %>% as.integer # on remet tout comme avant mais en 3035
+
+save_DVF(lgdrous.mbr)
 
 # Mise à l'échelle du fond de carte
 

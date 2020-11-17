@@ -1,4 +1,4 @@
-source("dvf.r")
+source("access.r")
 
 # utile pour OSRM
 plan("multiprocess", workers=8)
@@ -7,16 +7,18 @@ plan("multiprocess", workers=8)
 iris15 <- load_DVF("iris15")
 
 # sélection géographique des données d'opportunité à l'aire urbaine+20km histoire de ne manquer personne
-als <- iris15 %>% filter(UU2010=="67701") %>% st_buffer(10000) %>% st_union
-UU67701 <- iris15 %>% filter(UU2010=="67701") %>% st_union
-iris15_als <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,als, sparse=FALSE))
+als <- iris15 %>% filter(UU2010=="67701") %>% st_buffer(20000) %>% st_union
+uu67701 <- iris15 %>% filter(UU2010=="67701") %>% st_union
+iris15_als <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,als, sparse=FALSE)) %>% st_centroid()
 
 # carreaux sélectionnés pour le calcul de la grille
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
 
-c200Als <- load_DVF("c200Als") %>% st_transform(3035)  %>% st_as_sf # toute l'IDF
-c200_als <- c200Als %>% filter(st_within(., als, sparse=FALSE)) # Paris
+c200 <- load_DVF("c200") 
+c200_67701 <- c200 %>% filter(st_within(., uu67701, sparse=FALSE))
+
+rm(c200, iris15)
 
 # Moteur r5, en voiture ou en transit
 # attention la voiture est lente, surout pour des temps importants
@@ -26,7 +28,7 @@ tr_r5_Strasbourg <- routing_setup_r5(path="{DVFdata}/r5r_data/Strasbourg/r5" %>%
                                      time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
 
 iso_transit_50_r5_Strasbourg <- iso_accessibilite(quoi=iris15_als, # les variables d'opportunité
-                                       ou=c200_als, # la grille cible (plus long sur c200 que sur c200_mt)
+                                       ou=c200_67701, # la grille cible (plus long sur c200 que sur c200_mt)
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=60, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute
