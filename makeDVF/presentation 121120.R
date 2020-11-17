@@ -57,10 +57,11 @@ lyon <- ggplot(lyon_dt, aes(x=to25k, y=..density..*Nlyon, weight=Ind))+geom_dens
 idf+lyon
 
 #méthode 2; 1 seul graphe avec la ville comme groupe
-data <- rbind(idf_dt[, .(dist=to25k,Ind, ville="idf")], lyon_dt[, .(dist=to25k,Ind, ville="lyon")])
+data <- rbind(idf_dt[, .(dist=to25k,Ind, ville="paris")], lyon_dt[, .(dist=to25k,Ind, ville="lyon")])
 data <- data[, ind_grp:=sum(Ind), by=ville]
 nind <- data[, sum(Ind)]
-ggplot(data, aes(x=dist,y=..ndensity.., weight=Ind, group=ville))+geom_density(alpha=0.5)+facet_wrap(~ville)
+gg <- map(unique(data$ville), ~geom_density(data=data[ville==.x], aes(x=dist, weight=Ind, y=..density..*(data[ville==.x,sum(Ind)]), col=ville, fill=ville),alpha=0.5))
+ggplot()+gg
 
 #distance par buffer
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union()
