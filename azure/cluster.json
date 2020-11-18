@@ -8,8 +8,8 @@
       "max": 0
     },
     "lowPriorityNodes": {
-      "min": 1,
-      "max": 4
+      "min": 8,
+      "max": 8
     },
     "autoscaleFormula": "QUEUE"
   },
