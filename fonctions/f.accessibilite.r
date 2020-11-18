@@ -73,7 +73,7 @@ iso_accessibilite <- function(
   npaires_brut <- as.numeric(nrow(quoi_4326))*as.numeric(nrow(ou_4326))
   
   # établit les paquets (sur une grille)
-
+  
   groupes <- iso_split_ou(
     ou=ou_4326, 
     quoi=quoi_4326,
@@ -304,12 +304,12 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
   }
   
   ou_4326[, id := .I]
-  
   setkey(ou_4326, id)
+  
   list(ou_4326=ou_4326, quoi_4326=quoi_4326)
 }
 
-iso_split_ou <- function(ou, quoi, chunk, routing, tmax=60) 
+iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60) 
 {
   n <- min(100, nrow(ou))
   mou <- ou[sample(.N, n), .(x,y)] %>% as.matrix
@@ -321,7 +321,12 @@ iso_split_ou <- function(ou, quoi, chunk, routing, tmax=60)
   bbox <- sf_project(pts=bbox, from=st_crs(4326), to=st_crs(3035))
   surf <- (bbox[1,1]-bbox[2,1])*(bbox[1,2]-bbox[2,2])
   n_t <- if(is.null(routing$n_threads)) 1 else routing$n_threads
-  ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+  
+  if(is.null(routing$groupes))
+    ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+  else
+    ngr <- routing$groupes
+  
   log_info("taille {f2si2(size)} {f2si2(ngr)} groupes desires")
   
   resolution <- 12.5*2^floor(max(0,log2(sqrt(surf/ngr)/12.5)))
