@@ -64,7 +64,7 @@ iso_foot_50_osrm_Bordeaux <- iso_accessibilite(quoi=iris15_aqui, # les variables
                                      ou=c200_aqui, # la grille cible
                                      resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                      tmax=30, # le temps max des isochrones en minutes
-                                     pdt=1, # le pas de temps pour retourner le résultat en minute
+                                     pdt=1,# le pas de temps pour retourner le résultat en minutes
                                      routing=foot_osrm_Bordeaux) # moteur de routing
 
 save_DVF(iso_foot_50_osrm_Bordeaux)
