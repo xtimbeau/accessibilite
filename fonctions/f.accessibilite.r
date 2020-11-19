@@ -127,6 +127,7 @@ iso_accessibilite <- function(
   if(ttm_out)
   {
     gc()
+    plan(plan()) # pour reprendre la mémoire
     access <- rbindlist(map(access$file, fread))
     res <- list(
       type = "dt",
@@ -196,7 +197,7 @@ iso_accessibilite <- function(
           mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
           message(mtime)
           log_info("{routing$string} en {mtime}")
-          res %@% routing <- ("{routing$string} en {mtime}" %>% glue)
+          attr(res, "routing")<- ("{routing$string} en {mtime}" %>% glue)
           })
     }
   res

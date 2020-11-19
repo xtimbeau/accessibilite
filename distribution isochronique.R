@@ -20,7 +20,17 @@ idf+lyon  # affiche les 2 graphiques l'un à côté de l'autre
 
 #méthode 2; 1 seul graphe avec la ville comme groupe
 data <- rbind(idf_dt[, .(dist=to25k,Ind, ville="paris")], lyon_dt[, .(dist=to25k,Ind, ville="lyon")])
-data <- data[, ind_grp:=sum(Ind), by=ville]
+data <- data[, ind_grp:=sum(Ind), by=ville] [, w:= Ind/sum(Ind)]
 nind <- data[, sum(Ind)]
 gg <- map(unique(data$ville), ~geom_density(data=data[ville==.x], aes(x=dist, weight=Ind, y=..density..*(data[ville==.x,sum(Ind)]), col=ville, fill=ville),alpha=0.5))
 ggplot()+gg
+ggplot(data, aes(x=dist))+stat_density(aes(y=..density.., fill=ville, weight=w), position="stack", trim=FALSE)
+
+data <- na.omit(data, "dist")
+xx <- map(unique(data$ville), ~
+            {
+              dd <- data[ville==.x]
+              density(dd$dist, weight=dd$Ind, from=min(data$dist), to=max(data$dist))
+              })
+sum(xx$y)
+sum(head(xx$y, -1)*(head(xx$x, -1) -tail(xx$x, -1)))
