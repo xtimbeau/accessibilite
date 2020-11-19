@@ -201,7 +201,16 @@ idINS3035 <- function(x, y=NULL, resolution=200)
   resultat
 }
 
-raster_ref <- function(sf, resolution) raster(xt_as_extent(sf), crs=st_crs(sf)$proj4string,  resolution=resolution)
+raster_ref <- function(sf, resolution) 
+{
+  b <- st_bbox(sf)
+  ext <- extent(floor(b$xmin / resolution )*resolution,
+                ceiling(b$xmax/resolution)*resolution,
+                floor(b$ymin/resolution)*resolution,
+                ceiling(b$ymax/resolution)*resolution)
+  raster(ext, crs=st_crs(sf)$proj4string,  resolution=resolution)
+}
+
 
 croppedRaster <- function(x, na.value = NA)
 {
@@ -216,7 +225,7 @@ croppedRaster <- function(x, na.value = NA)
     rowNotNA <- which(rowSums(x.matrix) != ncol(x))
     
     croppedExtent <- extent(x, 
-                            r1 = rowNotNA[1], 
+                            r1 = rowNotNA[1],
                             r2 = rowNotNA[length(rowNotNA)],
                             c1 = colNotNA[1], 
                             c2 = colNotNA[length(colNotNA)])
@@ -242,14 +251,17 @@ croppedRaster <- function(x, na.value = NA)
 
 xt_as_extent <- function(sf) {
   b <- st_bbox(sf)
-  extent(b$xmin, b$xmax, b$ymin, b$ymax)
+  extent(b$xmin, 
+         b$xmax,
+         b$ymin, 
+         b$ymax)
 }
 
 r2dt <- function(raster, res=NULL, fun=mean)
 {
   vars <- names(raster) 
   xy <- raster::coordinates(raster)
-  idINS <- idINS3035(xy[,1], xy[,2], resolution=raster::res(raster[[1]]))
+  idINS <- idINS3035(xy[,1], xy[,2], resolution=raster::res(raster)[[1]])
   dt <- raster %>% as.data.frame %>% as.data.table
   dt <- dt[, `:=`(x=xy[,1], y=xy[,2], idINS=idINS)]
   dt <- na.omit(melt(dt, measure.vars=vars), "value")
@@ -262,11 +274,6 @@ r2dt <- function(raster, res=NULL, fun=mean)
   }
   dt
 }
-
-raster_ref <- function(sf, resolution) 
-{
-  raster(xt_as_extent(sf), crs=st_crs(sf)$proj4string,  resolution=resolution)
-  }
 
 raster_max <- function(sf1, sf2, resolution=200) {
   b1 <- st_bbox(sf1)

@@ -109,6 +109,8 @@ iso_accessibilite <- function(
   
   dir <- tempdir()
   
+  g_routing <- split_routing(routing) 
+  
   with_progress({
     pb <- progressor(steps=length(ou_gr))
     access <- 
@@ -117,7 +119,7 @@ iso_accessibilite <- function(
           ou_gr, 
           function(groupe) {
             pb()
-            access_on_groupe(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir)
+            access_on_groupe(groupe, ou_4326, quoi_4326, g_routing(groupe), k, tmax, opp_var, ttm_out, pids, dir)
           }
         )
       )
@@ -189,17 +191,17 @@ iso_accessibilite <- function(
                 rz <- raster::rasterize(r_xy, r, field=access_c[temps==.x, .SD, .SDcols=v])
                 names(rz) <- str_c("iso",.x, "m")
                 rz}))})
-          dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
-          red <- 100*(npaires_brut-npaires)/npaires_brut
-          tmn <- second2str(dtime)
-          speed_b <- npaires_brut/dtime
-          speed <- npaires/dtime
-          mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
-          message(mtime)
-          log_info("{routing$string} en {mtime}")
-          attr(res, "routing")<- ("{routing$string} en {mtime}" %>% glue)
           })
-    }
+      dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
+      red <- 100*(npaires_brut-npaires)/npaires_brut
+      tmn <- second2str(dtime)
+      speed_b <- npaires_brut/dtime
+      speed <- npaires/dtime
+      mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
+      message(mtime)
+      log_info("{routing$string} en {mtime}")
+      attr(res, "routing")<- ("{routing$string} en {mtime}" %>% glue)
+      }
   res
   }
 
@@ -207,7 +209,7 @@ iso_accessibilite <- function(
 
 # iso_ouetquoi projette sur 4326 les coordonnées et fabrique les grilles nécessaires en donnant en sortie les ou et quoi utilisés pour ttm
 
-iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=3)
+iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=4)
 {
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
@@ -226,7 +228,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
           ~(
             fasterize(
               quoi,
-              raster_ref(quoi, resolution/rf), 
+              raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
               fun=fun_quoi,
               background=0L,
               field=.x))))
@@ -323,27 +325,47 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
   surf <- (bbox[1,1]-bbox[2,1])*(bbox[1,2]-bbox[2,2])
   n_t <- if(is.null(routing$n_threads)) 1 else routing$n_threads
   
-  if(is.null(routing$groupes))
-    ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+  if(!is.null(routing$groupes)) 
+  {
+    ngr <- length(routing$groupes)
+    out_ou <- merge(ou, routing$fromId[, .(x,y,gr)], by=c("x","y"))
+    ou_gr <- unique(out_ou$gr)
+    names(ou_gr) <- ou_gr
+    resolution <- routing$resolution
+    subsampling <- 0
+  }
   else
-    ngr <- routing$groupes
-  
-  log_info("taille {f2si2(size)} {f2si2(ngr)} groupes desires")
-  
-  resolution <- 12.5*2^floor(max(0,log2(sqrt(surf/ngr)/12.5)))
-  
-  subsampling <- min(max(n_t,floor(resolution/(0.1*tmax*vmaxmode(routing$mode)))),8)
-  
-  log_info("resolution des groupes {resolution}")
-  idINS <- idINS3035(ou$x, ou$y, resolution)
-  uidINS <- unique(idINS)
-  
-  out_ou <- ou
-  out_ou[, `:=`(gr=idINS)]
-  ou_gr <- set_names(as.character(unique(out_ou$gr)))
-  
+  {
+    ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+    resolution <- 12.5*2^floor(max(0,log2(sqrt(surf/ngr)/12.5)))
+    
+    subsampling <- min(max(n_t,floor(resolution/(0.1*tmax*vmaxmode(routing$mode)))),8)
+    
+    idINS <- idINS3035(ou$x, ou$y, resolution)
+    uidINS <- unique(idINS)
+    
+    out_ou <- ou
+    out_ou[, `:=`(gr=idINS)]
+    ou_gr <- set_names(as.character(unique(out_ou$gr)))
+  }
+  log_info("taille:{f2si2(size)} gr:{f2si2(ngr)} res_gr:{resolution}")
   list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
 }
+
+split_routing <- function(routing){
+  function(grp) {
+    if(routing$type=="dt")
+      list(
+        type="dt",
+        time_table=routing$time_table[[grp]],
+        fromId = routing$fromId[gr==grp, ],
+        toId = routing$toId, 
+        ancres=FALSE, 
+        future=FALSE)
+      else
+        routing
+  }
+  }
 
 vmaxmode <- function(mode)
 {

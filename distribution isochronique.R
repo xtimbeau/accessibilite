@@ -34,3 +34,8 @@ xx <- map(unique(data$ville), ~
               })
 sum(xx$y)
 sum(head(xx$y, -1)*(head(xx$x, -1) -tail(xx$x, -1)))
+
+rrr <- iso2time(rr$c, c(1,5,100))
+petj_dt <- r2dt(rrr, 200)
+petj_dt <- merge(petj_dt, c200[, c("idINS200", "Ind")] , by="idINS200")
+idf <- ggplot(petj_dt, aes(x=to5, weight=Ind))+stat_ecdf()
