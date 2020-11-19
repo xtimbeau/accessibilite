@@ -23,32 +23,25 @@ save_DVF(ttr_r5_emp09_Toulouse)
 
 # P15_POP
 
-norm_tr_Lyon <- iso_transit_50_r5_Lyon$bricks$P15_POP/iso_transit_50_r5_Lyon$vars$P15_POP
-isotimes_Lyon <- names(norm_tr_Lyon) %>% str_extract("[:digit:]+") %>% as.numeric()
+norm_tr_Toulouse <- iso_transit_50_r5_Toulouse$bricks$P15_POP/iso_transit_50_r5_Toulouse$vars$P15_POP
+isotimes_Toulouse <- names(norm_tr_Toulouse) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_pop15_10_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
-ttr_pop15_15_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
-ttr_pop15_20_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
-ttr_pop15_25_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.25))
-ttr_pop15_30_Lyon <- calc(norm_tr, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.3))
+ttr_r5_pop15_Toulouse <- iso2time(iso_transit_50_r5_Toulouse$P15_POP, seuils=c(50000,100000,150000,200000,250000,300000,350000))
 
-ttr_pop15_Lyon <- brick(list(ttr_pop15_10_Lyon, ttr_pop15_15_Lyon, ttr_pop15_20_Lyon, ttr_pop15_25_Lyon, ttr_pop15_30_Lyon))
-names(ttr_pop15_Lyon) <- c("pop10_Lyon", "pop15_Lyon", "pop20_Lyon", "pop25_Lyon", "pop30_Lyon")
-
-save_DVF(ttr_pop15_Lyon)
+save_DVF(ttr_r5_pop15_Toulouse)
 
 # car ------------------
 
 # EMP09
 
-iso_car_50_osrm_Lyon <- load_DVF("iso_car_50_osrm_Lyon")
+iso_car_50_osrm_Toulouse <- load_DVF("iso_car_50_osrm_Toulouse")
 
-norm_car_Lyon <- iso_car_50_osrm_Lyon$bricks$EMP09/iso_car_50_osrm_Lyon$vars$EMP09
-isotimes_Lyon <- names(norm_car_Lyon) %>% str_extract("[:digit:]+") %>% as.numeric()
+norm_car_Toulouse <- iso_car_50_osrm_Toulouse$bricks$EMP09/iso_car_50_osrm_Toulouse$vars$EMP09
+isotimes_Toulouse <- names(norm_car_Toulouse) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_emp09_Lyon <- iso2time(iso_car_50_osrm_Lyon$EMP09, seuils=c(50000, 100000,150000,200000,250000,300000,350000,400000,450000,500000))
+tcar_osrm_emp09_Toulouse <- iso2time(iso_car_50_osrm_Toulouse$EMP09, seuils=c(50000, 100000,150000,200000,250000,300000,350000))
 
-save_DVF(tcar_osrm_emp09_Lyon)
+save_DVF(tcar_osrm_emp09_Toulouse)
 
 
 # P15_POP

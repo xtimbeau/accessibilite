@@ -4,6 +4,7 @@ lgdrous.mbr <- load_DVF("lgdrous.mbr")
 iris15 <- load_DVF("iris15")
 ttr_r5_emp09_Toulouse <- load_DVF("ttr_r5_emp09_Toulouse")
 tcar_osrm_emp09_Toulouse <- load_DVF("tcar_osrm_emp09_Toulouse")
+ttr_r5_pop15_Toulouse <- load_DVF("ttr_r5_pop15_Toulouse")
 
 # Construction bb33701
 
@@ -44,12 +45,20 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu31701$border) %>% st_
 # Cartes isotime sur fond de carte
 
 # transport en commun --------- EMP09
-ttr_r5_isotime_Toulouse <- tm_shape(lgdrous.mbr,bbox=bb31701)+tm_rgb()+
+ttr_r5_emp09_isotime_Toulouse <- tm_shape(lgdrous.mbr,bbox=bb31701)+tm_rgb()+
                            tm_shape(ttr_r5_emp09_Toulouse)+tm_raster(style="cont",palette=heatrg)+
                            tm_shape(riv,bbox=uu31701$bbox)+tm_fill("dodgerblue",alpha=1)
 
+ 
+# transports en communs ----------- P15_POP
+ 
+ttr_r5_pop15_isotime_Toulouse <- tm_shape(lgdrous.mbr,bbox=bb31701)+tm_rgb()+
+                                 tm_shape(ttr_r5_pop15_Toulouse)+tm_raster(style="cont",palette=heatrg)+
+                                 tm_shape(riv,bbox=uu31701$bbox)+tm_fill("dodgerblue",alpha=1)
+
+
 # voiture --------- EMP09
 
-tcar_osrm_isotime_Toulouse <- tm_shape(lgdrous.mbr,bbox=bb31701)+tm_rgb()+
+tcar_osrm_emp09_isotime_Toulouse <- tm_shape(lgdrous.mbr,bbox=bb31701)+tm_rgb()+
                               tm_shape(tcar_osrm_emp09_Toulouse)+tm_raster(style="cont",palette=heatrg)+
                               tm_shape(riv,bbox=uu31701$bbox)+tm_fill("dodgerblue",alpha=1)

@@ -44,12 +44,12 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu67701$border) %>% st_
 # Cartes isotime sur fond de carte
 
 # transport en commun --------- EMP09
-ttr_r5_isotime_Strasbourg <- tm_shape(als.mbr,bbox=bb67701)+tm_rgb()+
-                             tm_shape(ttr_r5_emp09_Strasbourg)+tm_raster(style="cont",palette=heatrg)+
-                             tm_shape(riv,bbox=uu67701$bbox)+tm_fill("dodgerblue",alpha=1)
+ttr_r5_emp09_isotime_Strasbourg <- tm_shape(als.mbr,bbox=bb67701)+tm_rgb()+
+                                   tm_shape(ttr_r5_emp09_Strasbourg)+tm_raster(style="cont",palette=heatrg)+
+                                   tm_shape(riv,bbox=uu67701$bbox)+tm_fill("dodgerblue",alpha=1)
 
 # voiture --------- EMP09
 
-tcar_osrm_isotime_Strasbourg <- tm_shape(als.mbr,bbox=bb67701)+tm_rgb()+
-                                tm_shape(tcar_osrm_emp09_Strasbourg)+tm_raster(style="cont",palette=heatrg)+
-                                tm_shape(riv,bbox=uu67701$bbox)+tm_fill("dodgerblue",alpha=1)
+tcar_osrm_emp09_isotime_Strasbourg <- tm_shape(als.mbr,bbox=bb67701)+tm_rgb()+
+                                      tm_shape(tcar_osrm_emp09_Strasbourg)+tm_raster(style="cont",palette=heatrg)+
+                                      tm_shape(riv,bbox=uu67701$bbox)+tm_fill("dodgerblue",alpha=1)

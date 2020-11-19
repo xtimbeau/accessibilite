@@ -41,14 +41,14 @@ save_DVF(ttr_pop15_Lyon)
 
 # EMP09
 
-iso_car_50_osrm_Lyon <- load_DVF("iso_car_50_osrm_Lyon")
+iso_car_50_osrm_Strasbourg <- load_DVF("iso_car_50_osrm_Strasbourg")
 
-norm_car_Lyon <- iso_car_50_osrm_Lyon$bricks$EMP09/iso_car_50_osrm_Lyon$vars$EMP09
-isotimes_Lyon <- names(norm_car_Lyon) %>% str_extract("[:digit:]+") %>% as.numeric()
+norm_car_Strasbourg <- iso_car_50_osrm_Strasbourg$bricks$EMP09/iso_car_50_osrm_Strasbourg$vars$EMP09
+isotimes_Strasbourg <- names(norm_car_Strasbourg) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_emp09_Lyon <- iso2time(iso_car_50_osrm_Lyon$EMP09, seuils=c(50000, 100000,150000,200000,250000,300000,350000,400000,450000,500000))
+tcar_osrm_emp09_Strasbourg <- iso2time(iso_car_50_osrm_Strasbourg$EMP09, seuils=c(50000, 100000,150000,200000))
 
-save_DVF(tcar_osrm_emp09_Lyon)
+save_DVF(tcar_osrm_emp09_Strasbourg)
 
 
 # P15_POP

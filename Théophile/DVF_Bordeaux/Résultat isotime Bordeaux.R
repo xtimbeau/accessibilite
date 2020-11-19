@@ -4,6 +4,8 @@ aqui.mbr <- load_DVF("aqui.mbr")
 iris15 <- load_DVF("iris15")
 ttr_r5_emp09_Bordeaux <- load_DVF("ttr_r5_emp09_Bordeaux")
 tcar_osrm_emp09_Bordeaux <- load_DVF("tcar_osrm_emp09_Bordeaux")
+ttr_r5_pop15_Bordeaux <- load_DVF("ttr_r5_pop15_Bordeaux")
+tcar_osrm_pop15_Bordeaux <- load_DVF("tcar_osrm_pop15_Bordeaux")
 
 # Construction bb33701
 
@@ -43,10 +45,18 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu33701$border) %>% st_
 
 # Cartes isotime sur fond de carte
 
-isotime_r5_emp09_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
-                    tm_shape(ttr_r5_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
-                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+ttr_r5_emp09_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
+                                 tm_shape(ttr_r5_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
+                                 tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
 
-isotime_osrm_emp09_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
-                               tm_shape(tcar_osrm_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
-                               tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+ttr_r5_pop15_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
+                                 tm_shape(ttr_r5_pop15_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
+                                 tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+
+tcar_osrm_emp09_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
+                                    tm_shape(tcar_osrm_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
+                                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+
+tcar_osrm_pop15_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
+                                    tm_shape(tcar_osrm_pop15_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
+                                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)

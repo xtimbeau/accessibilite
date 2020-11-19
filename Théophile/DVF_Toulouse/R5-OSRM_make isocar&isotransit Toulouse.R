@@ -47,8 +47,8 @@ tm_shape(iso_transit_50_r5_Toulouse$EMP09)+tm_raster(style="cont", palette=heatr
 car_osrm_Toulouse <- routing_setup_osrm(server="5002", profile="driving")
 foot_osrm_Toulouse <- routing_setup_osrm(server="5001", profile="walk")
 
-iso_car_50_osrm_Toulouse <- iso_accessibilite2(quoi=iris15_lgdrous, # les variables d'opportunité
-                                       ou=c200_lgdrous, # la grille cible
+iso_car_50_osrm_Toulouse <- iso_accessibilite(quoi=iris15_lgdrous, # les variables d'opportunité
+                                       ou=c200_31701, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                        tmax=90, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute

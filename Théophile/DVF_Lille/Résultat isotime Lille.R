@@ -4,6 +4,9 @@ nrdcal.mbr <- load_DVF("nrdcal.mbr")
 iris15 <- load_DVF("iris15")
 ttr_r5_emp09_Lille <- load_DVF("ttr_r5_emp09_Lille")
 tcar_osrm_emp09_Lille <- load_DVF("tcar_osrm_emp09_Lille")
+ttr_r5_pop15_Lille <- load_DVF("ttr_r5_pop15_Lille")
+tcar_osrm_pop15_Lille <- load_DVF("tcar_osrm_pop15_Lille")
+
 
 # Construction bb33701
 
@@ -47,6 +50,15 @@ ttr_r5_emp09_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
                               tm_shape(ttr_r5_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
                               tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
 
+ttr_r5_pop15_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
+                              tm_shape(ttr_r5_pop15_Lille)+tm_raster(style="cont",palette=heatrg)+
+                              tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+
+
 tcar_osrm_emp09_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
                                  tm_shape(tcar_osrm_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
+                                 tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+
+tcar_osrm_pop15_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
+                                 tm_shape(tcar_osrm_pop15_Lille)+tm_raster(style="cont",palette=heatrg)+
                                  tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)

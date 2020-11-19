@@ -46,7 +46,7 @@
   # rapide pour la voiture, y compris pour des temps longs
   
   car_osrm_Lyon <- routing_setup_osrm(server="5002", profile="driving")
-  foot_osrm_Lyon <- routing_setup_osrm(server="5001", profile="walk")
+  foot_osrm_Lyon <- routing_setup_osrm(server="5002", profile="walk")
   
   iso_car_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
                                          ou=c200_758,# la grille cible
@@ -62,7 +62,7 @@
   iso_foot_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
                                        ou=c200_758, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
-                                       tmax=15, # le temps max des isochrones en minutes
+                                       tmax=30, # le temps max des isochrones en minutes
                                        pdt=1, # le pas de temps pour retourner le résultat en minute
                                        routing=foot_osrm_Lyon) # moteur de routing
   

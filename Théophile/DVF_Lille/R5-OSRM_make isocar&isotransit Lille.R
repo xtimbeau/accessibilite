@@ -49,9 +49,9 @@ car_osrm_Lille <- routing_setup_osrm(server="5002", profile="driving")
 foot_osrm_Lille <- routing_setup_osrm(server="5001", profile="walk")
 
 iso_car_50_osrm_Lille <- iso_accessibilite(quoi=iris15_nrdcal, # les variables d'opportunité
-                                       ou=c200_nrdcal, # la grille cible
+                                       ou=c200_59702, # la grille cible
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
-                                       tmax=30, # le temps max des isochrones en minutes
+                                       tmax=90, # le temps max des isochrones en minutes
                                        pdt=5, # le pas de temps pour retourner le résultat en minute
                                        routing=car_osrm_Lille) # moteur de routing
 
