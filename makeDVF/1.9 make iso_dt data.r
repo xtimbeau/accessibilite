@@ -20,6 +20,5 @@ foot_ttm_50 <- iso_accessibilite(quoi = c200_idf4km %>% transmute(c=1),
                   resolution=res,
                   routing=foot_osrm,
                   tmax=20,
-                  ttm_out = TRUE, 
-                  )
+                  ttm_out = TRUE)
 

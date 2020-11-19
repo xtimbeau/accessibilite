@@ -73,7 +73,7 @@ iso_accessibilite <- function(
   npaires_brut <- as.numeric(nrow(quoi_4326))*as.numeric(nrow(ou_4326))
   
   # établit les paquets (sur une grille)
-
+  
   groupes <- iso_split_ou(
     ou=ou_4326, 
     quoi=quoi_4326,
@@ -128,93 +128,85 @@ iso_accessibilite <- function(
   {
     gc()
     access <- rbindlist(map(access$file, fread))
-  }
-  
-  npaires <- sum(access[, .(npaires=npep[[1]]), by=fromId][["npaires"]])
-  access[, `:=`(npea=NULL, npep=NULL)]
-  
-  groupes_ok <- unique(access$gr)
-  groupes_pasok <- setdiff(ou_gr, groupes_ok)
-  ou_pasok <- ou_4326[gr%chin%groupes_pasok, .N]
-  
-  log_warn("{ou_pasok} ({signif(ou_pasok/nrow(ou_4326)*100, 1)}%) origines non evaluees ")
-  
-  if(!ttm_out)
-  {
-    access[,gr:=NULL]
-    message("...cumul")
-    setnames(access, new="temps", old="travel_time")
-    all_times <- CJ(fromId=unique(access$fromId),temps=c(1:tmax), sorted=FALSE)
-    access <- merge(all_times, access, by=c("fromId", "temps"), all.x=TRUE)
-    for (v in opp_var) 
-      set(access, i=which(is.na(access[[v]])), j=v, 0)
-    setorder(access, fromId, temps)
-    access_c <- access[,
-                       list.append(map(.SD, cumsum), temps=temps),
-                       by=fromId,
-                       .SDcols=opp_var]
-    tt <- seq(pdt, tmax, pdt)
-    access_c <- access_c[temps%in%tt, ]
-    access_c <- merge(access_c, ou_4326, by.x="fromId", by.y="id")
-    
-    r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
-    
-    if(is.numeric(out)) {
-      outr <- resolution
-      out <- "raster"
-    }
-    
-    res <- switch(
-      out,
-      data.table = access_c,
-      sf = access_c %>% as_tibble() %>% st_as_sf(coords=c("x","y"), crs=3035),
-      raster = {
-        message("...rastérization")
-        r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
-        if (!is.null(ou))
-          r <- raster_ref(ou %>% st_transform(3035), outr)
-        else
-          r <- raster_ref(quoi %>% st_transform(3035), outr)
-        map(opp_var, function(v) {
-          brick(
-            map(tt, ~{
-              rz <- raster::rasterize(r_xy, r, field=access_c[temps==.x, .SD, .SDcols=v])
-              names(rz) <- str_c("iso",.x, "m")
-              rz}))})
-      })
-  }
-  else # ttm_out
-  {
     res <- list(
       type = "dt",
       origin = routing$type,
       origin_string = routing$string,
       string = "matrice de time travel {routing$type} precalculee" %>% glue,
-      time_table = rbind(access[, .(fromId, toId, travel_time)]),
+      time_table = access,
       fromId = ou_4326[, .(id, lon, lat, x, y)],
       toId = quoi_4326[, .(id, lon, lat, x, y)], 
       ancres=FALSE, 
-      future=TRUE
-    )
-  }
+      future=FALSE)
+    }
+  else
+    {
+      npaires <- sum(access[, .(npaires=npep[[1]]), by=fromId][["npaires"]])
+      access[, `:=`(npea=NULL, npep=NULL)]
+      
+      groupes_ok <- unique(access$gr)
+      groupes_pasok <- setdiff(ou_gr, groupes_ok)
+      ou_pasok <- ou_4326[gr%chin%groupes_pasok, .N]
+      
+      log_warn("{ou_pasok} ({signif(ou_pasok/nrow(ou_4326)*100, 1)}%) origines non evaluees ")
+      access[,gr:=NULL]
+      message("...cumul")
+      setnames(access, new="temps", old="travel_time")
+      all_times <- CJ(fromId=unique(access$fromId),temps=c(1:tmax), sorted=FALSE)
+      access <- merge(all_times, access, by=c("fromId", "temps"), all.x=TRUE)
+      for (v in opp_var) 
+        set(access, i=which(is.na(access[[v]])), j=v, 0)
+      setorder(access, fromId, temps)
+      access_c <- access[,
+                         list.append(map(.SD, cumsum), temps=temps),
+                         by=fromId,
+                         .SDcols=opp_var]
+      tt <- seq(pdt, tmax, pdt)
+      access_c <- access_c[temps%in%tt, ]
+      access_c <- merge(access_c, ou_4326, by.x="fromId", by.y="id")
+      
+      r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
   
-  dtime <- as.numeric(Sys.time()) - as.numeric(start_time)
-  red <- 100*(npaires_brut-npaires)/npaires_brut
-  tmn <- second2str(dtime)
-  speed_b <- npaires_brut/dtime
-  speed <- npaires/dtime
-  mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
-  message(mtime)
-  log_info("{routing$string} en {mtime}")
-  res %@% routing <- ("{routing$string} en {mtime}" %>% glue)
+      if(is.numeric(out)) {
+        outr <- resolution
+        out <- "raster"
+      }
+      res <- switch(
+        out,
+        data.table = access_c,
+        sf = access_c %>% as_tibble() %>% st_as_sf(coords=c("x","y"), crs=3035),
+        raster = {
+          message("...rastérization")
+          r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
+          if (!is.null(ou))
+            r <- raster_ref(ou %>% st_transform(3035), outr)
+          else
+            r <- raster_ref(quoi %>% st_transform(3035), outr)
+          map(opp_var, function(v) {
+            brick(
+              map(tt, ~{
+                rz <- raster::rasterize(r_xy, r, field=access_c[temps==.x, .SD, .SDcols=v])
+                names(rz) <- str_c("iso",.x, "m")
+                rz}))})
+          dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
+          red <- 100*(npaires_brut-npaires)/npaires_brut
+          tmn <- second2str(dtime)
+          speed_b <- npaires_brut/dtime
+          speed <- npaires/dtime
+          mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
+          message(mtime)
+          log_info("{routing$string} en {mtime}")
+          res %@% routing <- ("{routing$string} en {mtime}" %>% glue)
+          })
+    }
   res
-}
+  }
 
 # fonctions internes ----------------
 
 # iso_ouetquoi projette sur 4326 les coordonnées et fabrique les grilles nécessaires en donnant en sortie les ou et quoi utilisés pour ttm
 
-iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi)
+iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=3)
 {
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
@@ -225,7 +217,6 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
       quoi <- quoi %>% st_buffer(resolution/5)
     
     quoi <- quoi %>% st_transform(3035)
-    rf <- 3
     gc()
     rr_3035 <- 
       brick(
@@ -313,12 +304,12 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
   }
   
   ou_4326[, id := .I]
-  
   setkey(ou_4326, id)
+  
   list(ou_4326=ou_4326, quoi_4326=quoi_4326)
 }
 
-iso_split_ou <- function(ou, quoi, chunk, routing, tmax=60) 
+iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60) 
 {
   n <- min(100, nrow(ou))
   mou <- ou[sample(.N, n), .(x,y)] %>% as.matrix
@@ -330,7 +321,12 @@ iso_split_ou <- function(ou, quoi, chunk, routing, tmax=60)
   bbox <- sf_project(pts=bbox, from=st_crs(4326), to=st_crs(3035))
   surf <- (bbox[1,1]-bbox[2,1])*(bbox[1,2]-bbox[2,2])
   n_t <- if(is.null(routing$n_threads)) 1 else routing$n_threads
-  ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+  
+  if(is.null(routing$groupes))
+    ngr <- min(max(8, round(size/chunk)), round(size/1000)) # au moins 8 groupes, au plus des morceaux de 1k
+  else
+    ngr <- routing$groupes
+  
   log_info("taille {f2si2(size)} {f2si2(ngr)} groupes desires")
   
   resolution <- 12.5*2^floor(max(0,log2(sqrt(surf/ngr)/12.5)))
@@ -479,7 +475,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
 
       if(!is.null(ttm_0$error)) 
       {
-        log_warn("paquet:{groupe} ou_id:{les_ou_s} erreur ttm_0 {ttm_0$error}")
+        log_warn("carreau:{groupe} ou_id:{les_ou_s} erreur ttm_0 {ttm_0$error}")
         ttm_0 <- data.table()
       }
       else 
@@ -500,7 +496,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
                   ttm_on_closest(close, s_ou, quoi_4326, ttm_0, ttm_ou$les_ou, tmax, routing, groupe)
                 )
             )
-          ttm <- rbind(ttm_0[travel_time<=tmax], ttm)
+          ttm <- rbind(ttm_0[travel_time<=tmax], ttm[travel_time<=tmax])
         }
         else
           ttm <- ttm_0
@@ -516,7 +512,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           
           speed_log <-stringr::str_c(spid,
                             length(pproches),
-                            " paquets ", f2si2(npea),
+                            " ancres ", f2si2(npea),
                             "@",f2si2(npea/dtime),"p/s demandees, ",
                             f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
         
@@ -531,21 +527,20 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           }
           else
           {
-            ttm_d <- ttm
-            ttm_d <- ttm_d[, `:=`(npea=npea[[1]], npep=npep[[1]]), by=fromId]
+            ttm_d <- ttm[, .(fromId, toId, travel_time)]
           }
-          log_info("paquet:{groupe} {speed_log}")
+          log_info("carreau:{groupe} {speed_log}")
         }
         else 
         {
           ttm_d <- NULL
-          log_info("paquet:{groupe} ttm vide") 
+          log_info("carreau:{groupe} ttm vide") 
         }
       } # close nrow(ttm_0)>0
       else # nrow(ttm_0)==0
       {
         time <- toc(quiet=TRUE)
-        log_warn("paquet:{groupe} ou_id:{les_ou_s} ttm_0 vide")
+        log_warn("carreau:{groupe} ou_id:{les_ou_s} ttm_0 vide")
         log_warn("la matrice des distances entre les ancres et les opportunites est vide")
         ttm_d <- NULL
       }
