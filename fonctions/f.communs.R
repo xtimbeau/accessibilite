@@ -119,18 +119,24 @@ lload_DVF <- function(x)
 selectt <- function(.data, ...) .data %>% as_tibble %>% dplyr::select(...)
 
 graph2svg <- function(graph, file, height=16, width=20) {
+  env <- parent.frame()
+  file <- glue(file, .envir=env)
   svglite::svglite(file = str_c(file, ".svg"), height=height, width=width, pointsize = 9)
   print(graph)
   dev.off()
 }
 
 graph2jpg <- function(graph, file, height=2160, width=3840) {
+  env <- parent.frame()
+  file <- glue(file, .envir=env)
   grDevices::jpeg(file = str_c(file, ".jpg"), height=height, width=width, res=300)
   print(graph)
   dev.off()
 }
 
 graph2pdf <- function(graph, file, height=8, width=10) {
+  env <- parent.frame()
+  file <- glue(file, .envir=env)
   grDevices::pdf(file = str_c(file, ".pdf"), height=height, width=width)
   print(graph)
   dev.off()
@@ -259,10 +265,11 @@ f2si2<-function (number,rounding=TRUE, digits=1)
   pre <- c("y", "z", "a", "f", "p", "n", "u", "m", "", "k", 
            "M", "G", "T", "P", "E", "Z", "Y")
   ix <- findInterval(number, lut)
+  ixmax <- max(ix)
   if (rounding==TRUE) 
-      sistring <- paste0(round(number/lut[ix], digits), pre[ix])
+      sistring <- paste0(round(number/lut[ixmax], digits), pre[ixmax])
     else  
-      sistring <- paste0(number/lut[ix], pre[ix])
+      sistring <- paste0(number/lut[ixmax], pre[ixmax])
   return(sistring)
 }
 
