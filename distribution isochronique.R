@@ -1,6 +1,6 @@
 source("access.r")
 
-c200 <- load_DVF("c200") %>% st_drop_geometry()
+c200 <- load_DVF("c200") %>% st_drop_geometry() %>% as.data.table()
 
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 idf_dt <- r2dt(ttrr5_emp09_200)
@@ -39,3 +39,7 @@ rrr <- iso2time(rr$c, c(1,5,100))
 petj_dt <- r2dt(rrr, 200)
 petj_dt <- merge(petj_dt, c200[, c("idINS200", "Ind")] , by="idINS200")
 idf <- ggplot(petj_dt, aes(x=to5, weight=Ind))+stat_ecdf()
+
+ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
+idf_dt <- r2dt(ttrr5_emp09_200) %>% merge(c200[, .(idINS200, Ind)], by="idINS200")
+ggplot(disichrone(idf_dt, to500k, Ind))+geom_area(aes(x=to500k, y=Ind))

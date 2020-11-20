@@ -70,6 +70,7 @@ rastermap <-
            dropth = 0, # drop 1% des valeurs extrêmes
            palette=red2gray, style="kmeans", resolution=50, fdc=uu851.fdc, hdc=uu851.hdc,
            bbox=NULL, ...) {
+    
     quo_var <- rlang::enquo(var)
 
     raster.temp <- rastervar(data=data, var={{var}}, fun=fun, dropth=dropth, resolution=resolution)
@@ -259,13 +260,15 @@ xt_as_extent <- function(sf) {
 
 r2dt <- function(raster, res=NULL, fun=mean)
 {
+  base_res <- max(raster::res(raster))
   vars <- names(raster) 
   xy <- raster::coordinates(raster)
-  idINS <- idINS3035(xy[,1], xy[,2], resolution=raster::res(raster)[[1]])
+  idINS <- idINS3035(xy[,1], xy[,2], resolution=base_res)
   dt <- raster %>% as.data.frame %>% as.data.table
   dt <- dt[, `:=`(x=xy[,1], y=xy[,2], idINS=idINS)]
   dt <- na.omit(melt(dt, measure.vars=vars), "value")
   dt <- dcast(dt, x+y+idINS~variable, value.var="value")
+  setnames(dt, "idINS",str_c("idINS", base_res))
   if(!is.null(res))
   {
     id <- str_c("idINS",res)

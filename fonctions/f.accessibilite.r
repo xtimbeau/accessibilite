@@ -14,7 +14,8 @@ iso_accessibilite <- function(
   chunk=5000000,                    # paquet envoyé
   future=TRUE,                  
   out=ifelse(is.finite(resolution), resolution, "raster"),
-  ttm_out= FALSE)
+  ttm_out= FALSE, 
+  logs = localdata)
 {
   start_time <- Sys.time()
   
@@ -29,20 +30,20 @@ iso_accessibilite <- function(
   # 5. cumule
   # 6. rasterize
   
-  dir.create("{DVFdata}/logs" %>% glue, showWarnings = FALSE)
+  dir.create("{logs}/logs" %>% glue, showWarnings = FALSE)
   timestamp <- lubridate::stamp("15-01-20 10h08.05", orders = "dmy HMS", quiet=TRUE) (lubridate::now())
-  logfile <- glue("{DVFdata}/logs/iso_accessibilite.{routing$type}.{timestamp}.log")
+  logfile <- glue("{logs}/logs/iso_accessibilite.{routing$type}.{timestamp}.log")
   log_appender(appender_file(logfile))
   
-  log_info("Calcul accessibilité version 2")
-  log_info("{capture.output(show(routing))}")
-  log_info("")
-  log_info("tmax:{tmax}")
-  log_info("pdt:{pdt}")
-  log_info("chunk:{f2si2(chunk)}")
-  log_info("resolution:{resolution}")
-  log_info("future:{future}")
-  log_info("out:{out}")
+  log_success("Calcul accessibilité version 2")
+  log_success("{capture.output(show(routing))}")
+  log_success("")
+  log_success("tmax:{tmax}")
+  log_success("pdt:{pdt}")
+  log_success("chunk:{f2si2(chunk)}")
+  log_success("resolution:{resolution}")
+  log_success("future:{future}")
+  log_success("out:{out}")
   
   opp_var <- names(quoi %>% dplyr::as_tibble() %>% dplyr::select(where(is.numeric)))
   if(length(opp_var)==0)
@@ -53,7 +54,7 @@ iso_accessibilite <- function(
   
   names(opp_var) <- opp_var
   
-  log_info("les variables sont {c(opp_var)}")
+  log_success("les variables sont {c(opp_var)}")
   
   # fabrique les points d'origine (ou) et les points de cibles (ou)
   # dans le système de coordonnées 4326
@@ -84,8 +85,8 @@ iso_accessibilite <- function(
   ou_4326 <- groupes$ou
   ou_gr <- groupes$ou_gr
   k <- groupes$subsampling
-  log_info("{f2si2(nrow(ou_4326))} ou, {f2si2(nrow(quoi_4326))} quoi")
-  log_info("{length(ou_gr)} groupes, {k} subsampling")
+  log_success("{f2si2(nrow(ou_4326))} ou, {f2si2(nrow(quoi_4326))} quoi")
+  log_success("{length(ou_gr)} groupes, {k} subsampling")
   
   message("...calcul des temps de parcours")
   
@@ -199,7 +200,7 @@ iso_accessibilite <- function(
       speed <- npaires/dtime
       mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
       message(mtime)
-      log_info("{routing$string} en {mtime}")
+      log_success("{routing$string} en {mtime}")
       attr(res, "routing")<- ("{routing$string} en {mtime}" %>% glue)
       }
   res
@@ -348,7 +349,7 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
     out_ou[, `:=`(gr=idINS)]
     ou_gr <- set_names(as.character(unique(out_ou$gr)))
   }
-  log_info("taille:{f2si2(size)} gr:{f2si2(ngr)} res_gr:{resolution}")
+  log_success("taille:{f2si2(size)} gr:{f2si2(ngr)} res_gr:{resolution}")
   list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
 }
 
@@ -552,12 +553,12 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           {
             ttm_d <- ttm[, .(fromId, toId, travel_time)]
           }
-          log_info("carreau:{groupe} {speed_log}")
+          log_success("carreau:{groupe} {speed_log}")
         }
         else 
         {
           ttm_d <- NULL
-          log_info("carreau:{groupe} ttm vide") 
+          log_warn("carreau:{groupe} ttm vide") 
         }
       } # close nrow(ttm_0)>0
       else # nrow(ttm_0)==0

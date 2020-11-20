@@ -76,7 +76,7 @@ ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(100000,250000,500000,100000
 save_DVF(ttrr5_emp09)
 
 # transit GPE r5------------------------------------------------------
-
+log_threshold(SUCCESS)
 trGPE_r5 <- routing_setup_r5(path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, mode=c("WALK", "TRANSIT"),
                              time_window=60,
                              montecarlo = 100, 
