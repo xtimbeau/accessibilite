@@ -51,6 +51,7 @@ source("./fonctions/f.optgetmod.r", encoding="UTF-8")
 source("./fonctions/f.map utils.r", encoding="UTF-8")
 source("./fonctions/f.accessibilite.r", encoding="UTF-8")
 source("./fonctions/f.iso2time.r", encoding="UTF-8")
+source("./fonctions/f.geom_massity.r", encoding="UTF-8")
 
 # # calibri
 # font_import(prompt=FALSE)

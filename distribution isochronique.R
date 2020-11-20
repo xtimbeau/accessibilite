@@ -40,6 +40,21 @@ petj_dt <- r2dt(rrr, 200)
 petj_dt <- merge(petj_dt, c200[, c("idINS200", "Ind")] , by="idINS200")
 idf <- ggplot(petj_dt, aes(x=to5, weight=Ind))+stat_ecdf()
 
+# méthode 1, fonction disichrone
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 idf_dt <- r2dt(ttrr5_emp09_200) %>% merge(c200[, .(idINS200, Ind)], by="idINS200")
 ggplot(disichrone(idf_dt, to500k, Ind))+geom_area(aes(x=to500k, y=Ind))
+
+# méthode 2, en utilisant geom_massity comme geom_density, mais avec un calcul en plus: mass et cummass
+# on définit les distances à grapher (dans l'ordre que l'on souhaite) 
+distances <-c("to25k", "to50k","to100k","to150k","to200k","to250k")
+# melt transforme idf_dt en format long
+idf_dtm <- idf_dt[, .SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+lyon_dtm <- lyon_dt[, .SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+# on peut utiliser seuil comme couleur
+ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil), alpha=0.5)
+# mais aussi comme facette
+ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil))+facet_wrap(~seuil)
+# ou en mélangeant lyon et paris
+data <- rbind(idf_dtm[, ville:="paris"], lyon_dtm[, ville:="lyon"])
+ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=ville, fill=ville), alpha=0.5)+facet_wrap(~seuil)
