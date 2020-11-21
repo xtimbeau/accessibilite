@@ -88,44 +88,38 @@ iso_accessibilite <- function(
   log_success("{f2si2(nrow(ou_4326))} ou, {f2si2(nrow(quoi_4326))} quoi")
   log_success("{length(ou_gr)} groupes, {k} subsampling")
   
-  message("...calcul des temps de parcours")
-  
   pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
   
-  if(routing$future&future)
-  {
-    lt <- log_threshold()
-    map_fun <- function(list,fun) 
-      furrr::future_map(
-        list, 
-        function(arg) {
-          log_threshold(lt)
-          log_appender(logger::appender_file(logfile))
-          fun(arg)
-          },
-        .options=furrr::furrr_options(seed=TRUE, packages=c("data.table")))
-  }
-  else 
-    map_fun <- purrr::map
-  
   dir <- tempdir()
-  
-  g_routing <- split_routing(routing) 
+
+  message("...calcul des temps de parcours")
+
+  g_routing <- split_routing(routing, ou_gr)
   
   with_progress({
     pb <- progressor(steps=length(ou_gr))
-    access <- 
-      rbindlist(
-        map_fun(
-          ou_gr, 
-          function(groupe) {
-            pb()
-            access_on_groupe(groupe, ou_4326, quoi_4326, g_routing(groupe), k, tmax, opp_var, ttm_out, pids, dir)
-          }
-        )
-      )
-  },
-  handlers=handler_progress(format=":bar :percent :eta", width=80))
+    if(routing$future&future)
+    {
+      plan(plan())
+      lt <- log_threshold()
+      access <- furrr::future_imap( g_routing, function(r, g) {
+        log_threshold(lt)
+        log_appender(logger::appender_file(logfile))
+        pb()
+        access_on_groupe(g, ou_4326, quoi_4326, r, k, tmax, opp_var, ttm_out, pids, dir)
+        },.options=furrr::furrr_options(seed=TRUE, 
+                                        packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
+                                        scheduling = 1))
+      }
+    else
+      {
+        access <- purrr::imap(g_routing, function(r,g) {
+          pb()
+          access_on_groupe(g, ou_4326, quoi_4326, r, k, tmax, opp_var, ttm_out, pids, dir)
+        })
+        }
+    access <- rbindlist(access)
+  },handlers=handler_progress(format=":bar :percent :eta", width=80))
   
   if(ttm_out)
   {
@@ -205,6 +199,136 @@ iso_accessibilite <- function(
       }
   res
   }
+
+# pour dt_ttm, optimisé si le routing est précalculé
+
+iso_access_dt <- function(
+  quoi,                            # sf avec des variables numériques qui vont être aggrégées
+  ou=NULL,                         # positions sur lesquelles sont calculés les accessibilités (si NULL, sur une grille)
+  res_quoi=Inf,                    # projection éventuelle des lieux sur une grille
+  resolution=ifelse(is.null(ou), 200, Inf),
+  fun_quoi="any",                    # si projection fonction d'agrégation
+  routing,                         # défini le moteur de routage
+  tmax=10L,                        # en minutes
+  pdt=1L,
+  future=TRUE)
+{
+  start_time <- Sys.time()
+  
+  # 1. découpe les groupes d'origines
+  # 2. par groupe
+  #    1. prend un point au hasard
+  #    2. calcule les distances entre ce point et les cibles
+  #    3. calcule les distance entre le point et les autres du paquet
+  #    4. sélectionne pour chaque auter point du paquet les cibles atteignables
+  #    5. calcule les distances
+  # 4. aggrege
+  # 5. cumule
+  # 6. rasterize
+  
+  opp_var <- names(quoi %>%
+                     dplyr::as_tibble() %>%
+                     dplyr::select(where(is.numeric)))
+  
+  if(length(opp_var)==0)
+  {
+    opp_var <- "c"
+    quoi <- quoi %>%
+      dplyr::mutate(c=1)
+  }
+  
+  names(opp_var) <- opp_var
+  
+  # fabrique les points d'origine (ou) et les points de cibles (ou)
+  # dans le système de coordonnées 4326
+  
+  ouetquoi <- iso_ouetquoi_4326(
+    ou=ou, 
+    quoi=quoi,  
+    res_ou=resolution, 
+    res_quoi=res_quoi,
+    opp_var=opp_var,
+    fun_quoi=fun_quoi,
+    resolution=resolution)
+  
+  ou_4326 <- ouetquoi$ou_4326
+  quoi_4326 <- ouetquoi$quoi_4326
+  
+  npaires_brut <- as.numeric(nrow(quoi_4326))*as.numeric(nrow(ou_4326))
+  
+  # établit les paquets (sur une grille)
+  
+  groupes <- iso_split_ou(
+    ou=ou_4326, 
+    quoi=quoi_4326,
+    chunk=10,
+    routing=routing,
+    tmax=tmax)
+  
+  ou_4326 <- groupes$ou
+  ou_gr <- groupes$ou_gr
+  
+  message("...calcul des temps de parcours")
+  
+  g_routing <- split_routing(routing, ou_gr)
+  
+  with_progress({
+    pb <- progressor(steps=length(ou_gr))
+    if(routing$future&future)
+    {
+      plan(plan())
+      access <- furrr::future_imap( g_routing, function(r, g) {
+        pb()
+        dt_access_on_groupe(g, ou_4326[gr==g], quoi_4326, r, tmax, opp_var)
+      },.options=furrr::furrr_options(seed=TRUE, 
+                                      packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
+                                      scheduling = 1))
+    }
+    else
+    {
+      access <- purrr::imap(g_routing, function(r,g) {
+        pb()
+        dt_access_on_groupe(g, ou_4326[gr==g], quoi_4326, r, tmax, opp_var)
+      })
+    }
+    access <- rbindlist(access)
+  },handlers=handler_progress(format=":bar :percent :eta", width=80))
+  
+  message("...cumul")
+  setnames(access, new="temps", old="travel_time")
+  all_times <- CJ(fromId=unique(access$fromId),temps=c(1:tmax), sorted=FALSE)
+  access <- merge(all_times, access, by=c("fromId", "temps"), all.x=TRUE)
+  for (v in opp_var) 
+    set(access, i=which(is.na(access[[v]])), j=v, 0)
+  setorder(access, fromId, temps)
+  access_c <- access[,
+                     list.append(map(.SD, cumsum), temps=temps),
+                     by=fromId,
+                     .SDcols=opp_var]
+  tt <- seq(pdt, tmax, pdt)
+  access_c <- access_c[temps%in%tt, ]
+  access_c <- merge(access_c, ou_4326, by.x="fromId", by.y="id")
+  r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
+  outr <- resolution
+  message("...rastérization")
+  r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
+  if (!is.null(ou))
+    r <- raster_ref(ou %>% st_transform(3035), outr)
+  else
+    r <- raster_ref(quoi %>% st_transform(3035), outr)
+  res <- map(opp_var, function(v) {
+      brick(
+        map(tt, ~{
+          rz <- raster::rasterize(r_xy, r, field=access_c[temps==.x, .SD, .SDcols=v])
+          names(rz) <- str_c("iso",.x, "m")
+          rz}))})
+    dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
+    tmn <- second2str(dtime)
+    speed_b <- npaires_brut/dtime
+    mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s" %>% glue()
+    message(mtime)
+  res
+}
 
 # fonctions internes ----------------
 
@@ -353,19 +477,19 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
   list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
 }
 
-split_routing <- function(routing){
-  function(grp) {
-    if(routing$type=="dt")
-      list(
-        type="dt",
-        time_table=routing$time_table[[grp]],
-        fromId = routing$fromId[gr==grp, ],
-        toId = routing$toId, 
-        ancres=FALSE, 
-        future=FALSE)
+split_routing <- function(routing, grp) {
+  sr <- map(grp, ~{if(routing$type=="dt")
+    list(type="dt",
+         time_table=routing$time_table[[.x]],
+         fromId = routing$fromId[gr==.x, ],
+         toId = routing$toId, 
+         ancres=FALSE, 
+         future=FALSE)
       else
-        routing
-  }
+        routing}
+    )
+  names(sr) <- grp
+  sr
   }
 
 vmaxmode <- function(mode)
@@ -452,6 +576,16 @@ get_pid <- function(pids)
     stringr::str_c("[",which(pids==cpid),"] ")
   else
     ""
+}
+
+dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
+{
+  ttm <- iso_ttm(o=ou, d=quoi, tmax=tmax+1, routing=routing)$result
+  ttm_d1 <- merge(ttm, quoi, by.x="toId", by.y="id", all.x=TRUE)
+  ttm_d <- ttm_d1[, purrr::map(.SD,~sum(., na.rm=TRUE)),
+                  by=c("fromId", "travel_time"),
+                  .SDcols=(opp_var)]
+  ttm_d
 }
 
 access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir)
@@ -587,17 +721,17 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
   }
   if(ttm_out)
   {
-    file <- str_c(dir, groupe, ".csv")
-    fwrite(ttm_d, file)
-    ttm_d <- data.table(file=file)
+    file <- stringr::str_c(dir, groupe, ".csv")
+    data.table::fwrite(ttm_d, file)
+    ttm_d <- data.table::data.table(file=file)
   }
   ttm_d
 }
 
 minimax_euclid <- function(from, to, dist)
 {
-  m_from <- from[, .(x,y)] %>% as.matrix
-  m_to <- to[, .(x,y)] %>% as.matrix
+  m_from <- from[, .(x,y)] %>% as.matrix()
+  m_to <- to[, .(x,y)] %>% as.matrix()
   dfrom2to <- rdist::cdist(m_from, m_to)
   dmin2to <- matrixStats::colMins(dfrom2to)
   dmin2to<=dist

@@ -65,7 +65,7 @@ load_DVF <- function(str, rep="Rda", local=FALSE) {
 
 # lit un objet R depuis le répertoire DVF
 
-save_DVF <- function(x, nom = NULL, rep="Rda", local=FALSE) {
+save_DVF <- function(x, nom = NULL, rep="Rda", local=FALSE, preset="fast") {
   ex <- enquo(x)
   n_x <- as_name(ex)
   rep_u <- if(local) localdata else str_c(DVFdata,"/",rep)
@@ -78,7 +78,7 @@ save_DVF <- function(x, nom = NULL, rep="Rda", local=FALSE) {
     x$mods <- map(x$bp$xgbmod, xgbmload)
   if(is.list(x)) suppressWarnings(x <- rapply(x, readAll, classes=c("RasterBrick", "raster"), how="replace"))
   else if(is.raster(x)) suppressWarnings(readAll(x))
-  qs::qsave(x, file = filename, preset="fast", nthreads = 4)
+  qs::qsave(x, file = filename, preset=preset, nthreads = 4)
 }
 
 xgbmsave <- function(mod, fn)
@@ -265,7 +265,7 @@ f2si2<-function (number,rounding=TRUE, digits=1)
   pre <- c("y", "z", "a", "f", "p", "n", "u", "m", "", "k", 
            "M", "G", "T", "P", "E", "Z", "Y")
   ix <- findInterval(number, lut)
-  ixmax <- max(ix)
+  ixmax <- max(ix, na.rm=TRUE)
   if (rounding==TRUE) 
       sistring <- paste0(round(number/lut[ixmax], digits), pre[ixmax])
     else  

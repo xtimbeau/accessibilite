@@ -204,11 +204,12 @@ idINS3035 <- function(x, y=NULL, resolution=200)
 
 raster_ref <- function(sf, resolution) 
 {
+  alignres <- max(resolution, 200)
   b <- st_bbox(sf)
-  ext <- extent(floor(b$xmin / resolution )*resolution,
-                ceiling(b$xmax/resolution)*resolution,
-                floor(b$ymin/resolution)*resolution,
-                ceiling(b$ymax/resolution)*resolution)
+  ext <- extent(floor(b$xmin / alignres )*alignres,
+                ceiling(b$xmax/alignres)*alignres,
+                floor(b$ymin/alignres)*alignres,
+                ceiling(b$ymax/alignres)*alignres)
   raster(ext, crs=st_crs(sf)$proj4string,  resolution=resolution)
 }
 
@@ -257,7 +258,7 @@ xt_as_extent <- function(sf) {
          b$ymin, 
          b$ymax)
 }
-
+ 
 r2dt <- function(raster, res=NULL, fun=mean)
 {
   base_res <- max(raster::res(raster))
@@ -273,7 +274,7 @@ r2dt <- function(raster, res=NULL, fun=mean)
   {
     id <- str_c("idINS",res)
     dt[, (str_c("idINS",res)):=idINS3035(x,y,res)]
-    dt <- dt[, lapply(.SD, fun), by=c(id), .SDcols=vars]
+    dt <- dt[, lapply(.SD, fun, na.rm=TRUE), by=c(id), .SDcols=vars] 
   }
   dt
 }

@@ -42,6 +42,7 @@ idf <- ggplot(petj_dt, aes(x=to5, weight=Ind))+stat_ecdf()
 
 # méthode 1, fonction disichrone
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
+
 idf_dt <- r2dt(ttrr5_emp09_200) %>% merge(c200[, .(idINS200, Ind)], by="idINS200")
 ggplot(disichrone(idf_dt, to500k, Ind))+geom_area(aes(x=to500k, y=Ind))
 
@@ -61,11 +62,23 @@ ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil
 # mais aussi comme facette
 ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil))+facet_wrap(~seuil)
 # mais aussi comme facette et cumulé
-ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass), col=seuil, fill=seuil))+facet_wrap(~seuil)
+ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass), col=seuil, fill=seuil))+scale_y_continuous(labels=f2si2)+facet_wrap(~seuil)
 # ou en mélangeant lyon et paris
 data <- rbind(idf_dtm[, ville:="paris"], lyon_dtm[, ville:="lyon"])
-ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=ville, fill=ville), alpha=0.5)+facet_wrap(~seuil)
+ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=ville, fill=ville), alpha=0.5)+scale_y_continuous(labels=f2si2)+facet_wrap(~seuil)
 # on peut vouloir des fonctions en %
 ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass)/after_stat(total_mass), col=ville, fill=ville), alpha=0.5)+facet_wrap(~seuil)
 # on peut vouloir des fonctions en % et en cumul
 ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass)/after_stat(total_mass), col=ville, fill=ville), alpha=0.5)+facet_wrap(~seuil)
+
+
+# GPE versus non GPE
+c200 <- load_DVF("c200") %>% st_drop_geometry() %>% as.data.table()
+ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
+iso_GPE_200_r5 <- load_DVF("iso200/iso_GPE_200_r5")
+tGPEr5_200_r5 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(25000, 50000, 750000, 100000,150000,200000, 250000,500000))
+idf_dt <- rbind(r2dt(ttrr5_emp09_200)[, GPE:=FALSE], r2dt(tGPEr5_200_r5)[, GPE:=TRUE])
+idf_dt <- merge(idf_dt, c200[, .(idINS200, Ind)], by="idINS200")
+distances <-c("to25k", "to50k","to100k","to150k","to200k","to250k", "to500k", "to750k")
+idf_dtm <- idf_dt %>% melt(measure.vars=distances, variable.name="seuil", value.name="temps")
+ggplot(idf_dtm)+geom_massity(aes(x=temps, mass=Ind, col=GPE, fill=GPE), size=0.75, adjust=1.75, alpha=0.5)+scale_y_continuous(labels=f2si2)+facet_wrap(~seuil)
