@@ -45,7 +45,7 @@ tm_shape(iso_transit_50_r5_Toulouse$EMP09)+tm_raster(style="cont", palette=heatr
 # rapide pour la voiture, y compris pour des temps longs
 
 car_osrm_Toulouse <- routing_setup_osrm(server="5002", profile="driving")
-foot_osrm_Toulouse <- routing_setup_osrm(server="5001", profile="walk")
+foot_osrm_Toulouse <- routing_setup_osrm(server="5002", profile="walk")
 
 iso_car_50_osrm_Toulouse <- iso_accessibilite(quoi=iris15_lgdrous, # les variables d'opportunité
                                        ou=c200_31701, # la grille cible
@@ -58,10 +58,15 @@ save_DVF(iso_car_50_osrm_Toulouse)
 
 tm_shape(iso_car_50_osrm_Toulouse$EMP09)+tm_raster(style="cont", palette=heatrg)
 
-iso_foot_50_osrm_Toulouse <- iso_accessibilite2(quoi=iris15_lgdrous, # les variables d'opportunité
-                                     ou=c200_lgdrous, # la grille cible
+
+vv31701 <- iris15 %>% filter(UU2010=="31701")
+ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
+ecomos_lgdrous <- ecomos %>% filter(!clc6%in%c(231114, 332202 , 0)) %>% filter(st_within(., vv31701 %>% st_union %>% st_buffer(2000), sparse=FALSE))
+
+iso_foot_50_osrm_Toulouse <- iso_accessibilite(quoi=ecomos_lgdrous, # les variables d'opportunité
+                                     ou=c200_31701, # la grille cible
                                      resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
-                                     tmax=15, # le temps max des isochrones en minutes
+                                     tmax=20, # le temps max des isochrones en minutes
                                      pdt=1, # le pas de temps pour retourner le résultat en minute
                                      routing=foot_osrm_Toulouse) # moteur de routing
 

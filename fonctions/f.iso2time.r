@@ -20,11 +20,12 @@ iso2time <- function(isoraster, seuils)
     rr <- future_map(seuils, ~ {
       bb <- calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))
       pb()
-      brick(bb)
+      bb
     })})
+  rr <- brick(rr)
   names(rr) <- str_c("to", f2si2(seuils))
   rr  
-  }
+  } 
 
 isorenorme <- function(isoraster, facteur)
 {

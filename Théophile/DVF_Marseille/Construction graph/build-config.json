@@ -1,8 +1,0 @@
-// build-config.json
-{
-  transit: true,
-  useTransfersTxt: true,
-  stationTransfers: true,
-  osmWayPropertySet: "default",
-  areaVisibility: true
-  }

@@ -12,7 +12,7 @@ iso_transit_50_r5_Bordeaux <- load_DVF("iso_transit_50_r5_Bordeaux")
 norm_tr_Bordeaux <- iso_transit_50_r5_Bordeaux$bricks$EMP09/iso_transit_50_r5_Bordeaux$vars$EMP09
 isotimes_Bordeaux <- names(norm_tr_Bordeaux) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_emp09_Bordeaux <- iso2time(iso_transit_50_r5_Bordeaux$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000))
+ttr_r5_emp09_Bordeaux <- iso2time(iso_transit_50_r5_Bordeaux$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000,175000,200000,225000,250000))
 
 
 save_DVF(ttr_r5_emp09_Bordeaux)

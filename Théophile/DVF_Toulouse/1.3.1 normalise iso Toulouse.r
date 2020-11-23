@@ -16,7 +16,7 @@ iso_transit_50_r5_Toulouse <- load_DVF("iso_transit_50_r5_Toulouse")
 norm_tr_Toulouse <- iso_transit_50_r5_Toulouse$bricks$EMP09/iso_transit_50_r5_Toulouse$vars$EMP09
 isotimes_Toulouse <- names(norm_tr_Toulouse) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_emp09_Toulouse <- iso2time(iso_transit_50_r5_Toulouse$EMP09, seuils=c(25000,50000,75000, 100000,125000, 150000))
+ttr_r5_emp09_Toulouse <- iso2time(iso_transit_50_r5_Toulouse$EMP09, seuils=c(25000,50000,75000, 100000,125000, 150000,175000,200000,225000,250000))
 
 save_DVF(ttr_r5_emp09_Toulouse)
 
@@ -46,19 +46,12 @@ save_DVF(tcar_osrm_emp09_Toulouse)
 
 # P15_POP
 
-norm_car <- iso_car_50$bricks$P15_POP/iso_car_50$vars$P15_POP
+norm_car <- iso_car_50_osrm_Toulouse$bricks$P15_POP/iso_car_50_osrm_Toulouse$vars$P15_POP
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_pop15_10 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.1))
-tcar_pop15_15 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.15))
-tcar_pop15_20 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.2))
-tcar_pop15_25 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.25))
-tcar_pop15_30 <- calc(norm_car, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=0.3))
+tcar_osrm_pop15_Toulouse <- iso2time(iso_car_50_osrm_Toulouse$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,350000))
 
-tcar_pop15 <- brick(list(tcar_pop15_10, tcar_pop15_15, tcar_pop15_20, tcar_pop15_25, tcar_pop15_30))
-names(tcar_pop15) <- c("pop10", "pop15", "pop20", "pop25", "pop30")
-
-save_DVF(tcar_pop15)
+save_DVF(tcar_osrm_pop15_Toulouse)
 
 # quelques graphes
 

@@ -47,7 +47,7 @@ tm_shape(iso_transit_50_r5_Bordeaux$EMP09)+tm_raster(style="cont", palette=heatr
 # rapide pour la voiture, y compris pour des temps longs
 
 car_osrm_Bordeaux <- routing_setup_osrm(server="5002", profile="driving")
-foot_osrm_Bordeaux <- routing_setup_osrm(server="5001", profile="walk")
+foot_osrm_Bordeaux <- routing_setup_osrm(server="5002", profile="walk")
 
 iso_car_50_osrm_Bordeaux <- iso_accessibilite(quoi=iris15_aqui, # les variables d'opportunité
                                        ou=c200_33701, # la grille cible
@@ -60,8 +60,13 @@ save_DVF(iso_car_50_osrm_Bordeaux)
 
 tm_shape(iso_car_50_osrm_Bordeaux$EMP09)+tm_raster(style="cont", palette=heatrg)
 
+
+vv33701 <- iris15 %>% filter(UU2010=="33701")
+ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
+ecomos_aqui <- ecomos %>% filter(!clc6%in%c(231114, 332202 , 0)) %>% filter(st_within(., vv33701 %>% st_union %>% st_buffer(2000), sparse=FALSE))
+
 iso_foot_50_osrm_Bordeaux <- iso_accessibilite(quoi=iris15_aqui, # les variables d'opportunité
-                                     ou=c200_aqui, # la grille cible
+                                     ou=c200_33701, # la grille cible
                                      resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
                                      tmax=30, # le temps max des isochrones en minutes
                                      pdt=1,# le pas de temps pour retourner le résultat en minutes

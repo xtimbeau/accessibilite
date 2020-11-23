@@ -12,7 +12,7 @@ iso_transit_50_r5_Lille <- load_DVF("iso_transit_50_r5_Lille")
 norm_tr_Lille <- iso_transit_50_r5_Lille$bricks$EMP09/iso_transit_50_r5_Lille$vars$EMP09
 isotimes_Lille <- names(norm_tr_Lille) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_emp09_Lille <- iso2time(iso_transit_50_r5_Lille$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000))
+ttr_r5_emp09_Lille <- iso2time(iso_transit_50_r5_Lille$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000,175000,200000,225000,250000))
 
 save_DVF(ttr_r5_emp09_Lille)
 

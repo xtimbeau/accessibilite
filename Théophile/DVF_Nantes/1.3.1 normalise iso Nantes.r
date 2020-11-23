@@ -1,11 +1,5 @@
 source("access.r")
 
-fisoinv <- function(x, isotimes, seuil=0.2)
-{
-  l <- length(isotimes)
-  if(x[l]>=seuil) approx(y=isotimes, x=x %>% as.vector , xout=seuil)$y
-  else NA
-}
 
 iso_transit_50_r5_Nantes <- load_DVF("iso_transit_50_r5_Nantes")
 
@@ -14,7 +8,7 @@ iso_transit_50_r5_Nantes <- load_DVF("iso_transit_50_r5_Nantes")
 norm_tr_Nantes <- iso_transit_50_r5_Nantes$bricks$EMP09/iso_transit_50_r5_Nantes$vars$EMP09
 isotimes_Nantes <- names(norm_tr_Nantes) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_emp09_Nantes <- iso2time(iso_transit_50_r5_Nantes$EMP09, seuils=c(25000,50000,75000, 100000,125000))
+ttr_r5_emp09_Nantes <- iso2time(iso_transit_50_r5_Nantes$EMP09, seuils=c(25000,50000,75000, 100000,125000,150000,1750000,200000,225000,250000))
 
 save_DVF(ttr_r5_emp09_Nantes)
 
