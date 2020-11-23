@@ -91,31 +91,33 @@ iso_accessibilite <- function(
   pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
   
   dir <- tempdir()
+  if(!is.null(routing$groupes)) 
+    routing <- swap2tmp_routing(routing)
 
   message("...calcul des temps de parcours")
 
-  g_routing <- split_routing(routing, ou_gr)
-  
   with_progress({
     pb <- progressor(steps=length(ou_gr))
     if(routing$future&future)
     {
       plan(plan())
       lt <- log_threshold()
-      access <- furrr::future_imap( g_routing, function(r, g) {
+      access <- furrr::future_map( ou_gr, function(g) {
         log_threshold(lt)
         log_appender(logger::appender_file(logfile))
         pb()
-        access_on_groupe(g, ou_4326, quoi_4326, r, k, tmax, opp_var, ttm_out, pids, dir)
+        rrouting <- get_routing(routing, g)
+        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir)
         },.options=furrr::furrr_options(seed=TRUE, 
                                         packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
                                         scheduling = 1))
       }
     else
       {
-        access <- purrr::imap(g_routing, function(r,g) {
+        access <- purrr::map(ou_gr, function(g) {
           pb()
-          access_on_groupe(g, ou_4326, quoi_4326, r, k, tmax, opp_var, ttm_out, pids, dir)
+          rrouting <- get_routing(routing, g)
+          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir)
         })
         }
     access <- rbindlist(access)
@@ -125,7 +127,14 @@ iso_accessibilite <- function(
   {
     gc()
     plan(plan()) # pour reprendre la mémoire
-    access <- rbindlist(map(access$file, fread))
+    access <- map(access$file,~{
+      tt <- fread(.x)
+      tt[, .(fromId, toId, travel_time)]
+      setkey(tt, fromId)
+      setindex(tt, toId)
+      tt
+      })
+    names(access) <- ou_gr
     res <- list(
       type = "dt",
       origin = routing$type,
@@ -134,8 +143,12 @@ iso_accessibilite <- function(
       time_table = access,
       fromId = ou_4326[, .(id, lon, lat, x, y)],
       toId = quoi_4326[, .(id, lon, lat, x, y)], 
+      groupes=ou_gr,
+      resolution=groupes$resINS,
+      res_ou = res_ou,
+      res_quoi = res_quoi,
       ancres=FALSE, 
-      future=FALSE)
+      future=TRUE)
     }
   else
     {
@@ -155,8 +168,7 @@ iso_accessibilite <- function(
       for (v in opp_var) 
         set(access, i=which(is.na(access[[v]])), j=v, 0)
       setorder(access, fromId, temps)
-      access_c <- access[,
-                         list.append(map(.SD, cumsum), temps=temps),
+      access_c <- access[, list.append(map(.SD, cumsum), temps=temps),
                          by=fromId,
                          .SDcols=opp_var]
       tt <- seq(pdt, tmax, pdt)
@@ -175,16 +187,22 @@ iso_accessibilite <- function(
         sf = access_c %>% as_tibble() %>% st_as_sf(coords=c("x","y"), crs=3035),
         raster = {
           message("...rastérization")
-          r_xy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId] [, fromId:=NULL]
+          xxyy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId]
+          sqs <- st_as_sf(xxyy, coords=c("x", "y"), crs=3035) %>% st_buffer(outr/2)
           if (!is.null(ou))
             r <- raster_ref(ou %>% st_transform(3035), outr)
           else
             r <- raster_ref(quoi %>% st_transform(3035), outr)
+          ttn <- str_c("iso",tt, "m")
           map(opp_var, function(v) {
+            r_xy <- dcast(access_c, fromId~temps, value.var=v)
+            names(r_xy) <- c("fromId", ttn)
+            r_xy[, geometry:=sqs$geometry]
+            r_xy <- r_xy %>% as.data.frame() %>% st_as_sf()
             brick(
-              map(tt, ~{
-                rz <- raster::rasterize(r_xy, r, field=access_c[temps==.x, .SD, .SDcols=v])
-                names(rz) <- str_c("iso",.x, "m")
+              map(ttn, ~{
+                rz <- fasterize::fasterize(r_xy, r, field=.x)
+                names(rz) <- .x
                 rz}))})
           })
       dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
@@ -334,7 +352,7 @@ iso_access_dt <- function(
 
 # iso_ouetquoi projette sur 4326 les coordonnées et fabrique les grilles nécessaires en donnant en sortie les ou et quoi utilisés pour ttm
 
-iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=4)
+iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=5)
 {
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
@@ -346,7 +364,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
     
     quoi <- quoi %>% st_transform(3035)
     gc()
-    rr_3035 <- 
+    rrr_3035 <- 
       brick(
         map(
           opp_var,
@@ -355,9 +373,9 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
               quoi,
               raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
               fun=fun_quoi,
-              background=0L,
+              background=0,
               field=.x))))
-    rr_3035 <- raster::aggregate(rr_3035, fact=rf, fun=mean)
+    rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
     xy_3035 <- raster::coordinates(rr_3035)
     quoi_3035 <- data.table(rr_3035 %>% as.data.frame(),
                             x=xy_3035[,1] %>% round(), 
@@ -371,6 +389,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
     quoi_4326 <- quoi_4326[keep,]
     xy_3035 <-quoi_4326[, .(x,y)] %>% as.matrix
     xy_4326 <- sf_project(xy_3035, from = st_crs(3035), to = st_crs(4326))
+    rm(rrr_3035,rr_3035)
     gc()
   }
   else
@@ -477,20 +496,28 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
   list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
 }
 
-split_routing <- function(routing, grp) {
-  sr <- map(grp, ~{if(routing$type=="dt")
-    list(type="dt",
-         time_table=routing$time_table[[.x]],
-         fromId = routing$fromId[gr==.x, ],
-         toId = routing$toId, 
-         ancres=FALSE, 
-         future=FALSE)
-      else
-        routing}
-    )
-  names(sr) <- grp
-  sr
+swap2tmp_routing <- function(routing) {
+  if(is.null(routing$groupes))
+    return(routing)
+  if(!is.null(routing$tempdir))
+    return(routing)
+  dir <- tempdir()
+  routing$time_table <- map_chr(routing$groupes, ~{
+    file <- "{dir}/{.x}.csv" %>% glue
+    fwrite(routing$time_table[[.x]], file=file)
+    file
+  })
+  routing$tempdir <- dir
+  routing
   }
+
+get_routing <- function(routing, groupe) {
+  if(is.null(routing$groupes))
+    return(routing)
+  routing$time_table <- fread(routing$time_table[[groupe]])
+  routing
+}
+
 
 vmaxmode <- function(mode)
 {

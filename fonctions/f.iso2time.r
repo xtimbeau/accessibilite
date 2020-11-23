@@ -13,14 +13,18 @@ iso2time <- function(isoraster, seuils)
     if(!is.na(xmax)&&xmax>=seuil) approx(y=isotimes, x=as.vector(x), xout=seuil)[["y"]]
     else NA
   }
-  
   isotimes <- names(isoraster) %>% str_extract("[:digit:]+") %>% as.numeric()
   
-  rr <- map(seuils, ~ calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))) %>%
-    brick
+  with_progress({
+    pb <- progressor(steps=length(seuils))
+    rr <- future_map(seuils, ~ {
+      bb <- calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))
+      pb()
+      brick(bb)
+    })})
   names(rr) <- str_c("to", f2si2(seuils))
-  rr
-}
+  rr  
+  }
 
 isorenorme <- function(isoraster, facteur)
 {

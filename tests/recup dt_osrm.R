@@ -44,7 +44,7 @@ f20_osrm_idf_50 <- list(
   origin = "OSRM",
   origin_string = "",
   string = "matrice de time travel OSRM precalculee" %>% glue,
-  time_table = access,
+  time_tables = access,
   fromId = groupes$ou,
   toId = ouetquoi$quoi_4326[, .(id, lon, lat, x, y)], 
   groupes=groupes$ou_gr,
@@ -52,18 +52,18 @@ f20_osrm_idf_50 <- list(
   res_ou = 50,
   res_quoi = 50,
   ancres=FALSE, 
-  future=FALSE)
+  future=TRUE)
 
 save_DVF(f20_osrm_idf_50, preset="high")
 
-f20_osrm_idf_50 <- load_DVF("f20_osrm_idf_50")
-f20_osrm_idf_50$future <- FALSE
-plan(multisession, workers=2)
+f20_osrm_idf_50 <- swap2tmp_routing(load_DVF("f20_osrm_idf_50"))
+f20_osrm_idf_50$future <- TRUE
+plan(multisession, workers=8)
 foot_ttm_50 <- iso_accessibilite(quoi = c200_idf4km %>% transmute(c=1),
                                  ou = c200_idf,
                                  resolution=50,
                                  routing=f20_osrm_idf_50,
-                                 tmax=20, future=FALSE)
+                                 tmax=20, future=TRUE)
 uu851 <- load_DVF("uu851")
 ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
 ecomos_idf <- ecomos %>%
@@ -80,11 +80,11 @@ rr <- iso_accessibilite(
   pdt=1,                          
   routing=f20_osrm_idf_50)
 
-ist_ecomos <- rr$c %>% iso2time(c(1,5,10,15,20,50,100))
+ist_ecomos <- rr$c %>% iso2time(c(1,5,10,15,20,25,30,35,40,45,50,100))
 save_DVF(ist_ecomos)
 c200 <- load_DVF("c200") %>% st_drop_geometry() %>% as.data.table()
 idf_dt <- r2dt(ist_ecomos, 200)
 idf_dt <- merge(idf_dt, c200[, .(idINS200, Ind)], by="idINS200")
 distances <-c("to1", "to5","to10","to15","to20","to50", "to100")
 idf_dtm <- idf_dt %>% melt(measure.vars=distances, variable.name="seuil", value.name="temps")
-ggplot(idf_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass), col=seuil))+scale_y_continuous(labels=f2si2)
+ggplot(idf_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass)/idf_dt[, sum(Ind)], col=seuil))+scale_y_continuous(labels=f2si2)

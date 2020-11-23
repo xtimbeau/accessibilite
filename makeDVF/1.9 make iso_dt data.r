@@ -9,16 +9,15 @@ idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
 c200_idf <- c200 %>% filter(st_within(., idf, sparse=FALSE))
 c200_75 <- c200 %>% filter(dep=="75")
 c200_mtrl <- c200 %>% filter(Depcom=="93048")
-c200_idf4km <- c200 %>% filter(st_within(., idf4km, sparse=FALSE))
 rm(c200)
 
-plan(multisession, workers=8)
+plan(multisession, workers=4)
 foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
 
-foot_ttm_50 <- iso_accessibilite(quoi = c200_idf4km %>% transmute(c=1),
-                  ou = c200_idf,
-                  resolution=res,
-                  routing=foot_osrm,
-                  tmax=20,
-                  ttm_out = TRUE)
-
+foot_ttm_50 <- iso_accessibilite(
+  quoi = idf4km %>% st_sf() %>% transmute(c=1),
+  ou = c200_idf,
+  resolution=res,
+  routing=foot_osrm,
+  tmax=20,
+  ttm_out = TRUE)

@@ -157,13 +157,52 @@ idINS2point <- function(ids, resolution=200)
   m
 }
 
-xt_point2square <- function(point, r=200)
+xt_point2square <- function(x, y=NULL, r=200, center=FALSE)
 {
-  xy <- st_coordinates(point)
-  x <- xy[[1]]
-  y <- xy[[2]]
-  st_polygon(list(matrix(c(x, x+r,x+r,x, y,y+r,y+r,y),nrow=4, ncol=2)))
+  if(is.null(y))
+  {
+   if(is.matrix(x))
+    {
+     y <- x[,2]
+     x <- x[,1]
+   }
+    else 
+      {xy <- st_coordinates(point)
+      x <- xy[[1]]
+      y <- xy[[2]]}
+  }
+  if(center)
+  {
+    x <- x-r/2
+    y <- y-r/2
+    } 
+ st_polygon(list(matrix(c(x, x+r, x+r, x,   x,
+                          y, y,   y+r, y+r, y),nrow=5, ncol=2)))
 }
+
+points2square <- function(x, y=NULL, r=200, center=FALSE)
+{
+  if(is.null(y))
+  {
+    if(is.matrix(x))
+    {
+      y <- x[,2]
+      x <- x[,1]
+    }
+    else 
+    {xy <- st_coordinates(point)
+    x <- xy[[1]]
+    y <- xy[[2]]}
+  }
+  if(center)
+  {
+    x <- x-r/2
+    y <- y-r/2
+  } 
+  map2(x,y, ~st_polygon(list(matrix(c(x, x+r, x+r, x,   x,
+                                      y, y,   y+r, y+r, y),nrow=5, ncol=2))))
+}
+
 
 make_idINSPIRE <- function(grid) {
   geom <-
