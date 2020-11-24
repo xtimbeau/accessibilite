@@ -265,13 +265,27 @@ f2si2<-function (number,rounding=TRUE, digits=1)
   pre <- c("y", "z", "a", "f", "p", "n", "u", "m", "", "k", 
            "M", "G", "T", "P", "E", "Z", "Y")
   ix <- findInterval(number, lut)
-  ixmax <- max(ix, na.rm=TRUE)
+  ixmax <- median(ix, na.rm=TRUE)
   if (rounding==TRUE) 
       sistring <- paste0(round(number/lut[ixmax], digits), pre[ixmax])
     else  
       sistring <- paste0(number/lut[ixmax], pre[ixmax])
   return(sistring)
 }
+
+uf2si2<-function (number,rounding=TRUE) 
+{
+  n_number <- length(number)
+  digits <- 1
+  f2 <- f2si2(number, digits=digits)
+  while(length(unique(f2))<n_number)
+  {
+    digits <- digits+1
+    f2 <- f2si2(number, digits=digits)
+  }
+  f2 
+}
+
 
 list2strs <-  function(list)
 {

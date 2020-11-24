@@ -309,13 +309,15 @@ r2dt <- function(raster, res=NULL, fun=mean)
   dt <- na.omit(melt(dt, measure.vars=vars), "value")
   dt <- dcast(dt, x+y+idINS~variable, value.var="value")
   setnames(dt, "idINS",str_c("idINS", base_res))
+  navars <- setdiff(vars, names(dt))
+  rvars <- setdiff(vars, navars)
   if(!is.null(res))
   {
     id <- str_c("idINS",res)
     dt[, (str_c("idINS",res)):=idINS3035(x,y,res)]
-    dt <- dt[, lapply(.SD, fun, na.rm=TRUE), by=c(id), .SDcols=vars] 
+    dt <- dt[, lapply(.SD, function(x) fun(x, na.rm=TRUE)), by=c(id), .SDcols=rvars]
   }
-  dt
+  dt[, (navars):=rep(list(rep(NA, nrow(dt))), length(navars))]
 }
 
 raster_max <- function(sf1, sf2, resolution=200) {
