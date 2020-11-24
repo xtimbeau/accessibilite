@@ -23,17 +23,28 @@ nantes_dt <- merge(nantes_dt, c200[, .(idINS200, Ind)], by="idINS200")
 
 distances <-c("to25k", "to50k","to100k","to150k","to200k","to250k")
 
+
 # melt transforme idf_dt en format long
-idf_dtm <- idf_dt[, .SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+idf_dtm <- idf_dt[, .SD, .SDcols=c(dist, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
 lyon_dtm <- lyon_dt[, .SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+bordeaux_dtm <- bordeaux_dt[, .SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+toulouse_dtm <- toulouse_dt[, .SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+marseille_dtm <- marseille_dt[, SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+lille_dtm <- lille_dt[, SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
+nantes_dtm <- nantes_dt[, SD, .SDcols=c(distances, "Ind")] %>% melt(measure.vars=distances, variable.name="seuil", value.name="dist")
 # on peut utiliser seuil comme couleur
 ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil), alpha=0.5)
+ggplot(lyon_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil), alpha=0.5)
+
 # mais aussi comme facette
 ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil))+facet_wrap(~seuil)
+ggplot(bordeaux_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil))+facet_wrap(~seuil)
+
 # mais aussi comme facette et cumulé
 ggplot(idf_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass), col=seuil, fill=seuil))+facet_wrap(~seuil)
+ggplot(bordeaux_dtm)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass), col=seuil, fill=seuil))+facet_wrap(~seuil)
 # ou en mélangeant lyon et paris
-data <- rbind(idf_dtm[, ville:="paris"], lyon_dtm[, ville:="lyon"])
+data <- rbind(idf_dtm[, ville:="paris"], bordeaux_dtm[, ville:="bordeaux"])
 ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass), col=ville, fill=ville), alpha=0.5)+facet_wrap(~seuil)
 # on peut vouloir des fonctions en %
 ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass)/after_stat(total_mass), col=ville, fill=ville), alpha=0.5)+facet_wrap(~seuil)

@@ -60,7 +60,7 @@ save_DVF(iso_car_50_osrm_Bordeaux)
 
 tm_shape(iso_car_50_osrm_Bordeaux$EMP09)+tm_raster(style="cont", palette=heatrg)
 
-
+iris15 <- load_DVF("iris15")
 vv33701 <- iris15 %>% filter(UU2010=="33701")
 ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
 ecomos_aqui <- ecomos %>% filter(!clc6%in%c(231114, 332202 , 0)) %>% filter(st_within(., vv33701 %>% st_union %>% st_buffer(2000), sparse=FALSE))
