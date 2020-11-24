@@ -317,7 +317,9 @@ r2dt <- function(raster, res=NULL, fun=mean)
     dt[, (str_c("idINS",res)):=idINS3035(x,y,res)]
     dt <- dt[, lapply(.SD, function(x) fun(x, na.rm=TRUE)), by=c(id), .SDcols=rvars]
   }
-  dt[, (navars):=rep(list(rep(NA, nrow(dt))), length(navars))]
+  if (length(navars)>0)
+    dt[, (navars):=rep(list(rep(NA, nrow(dt))), length(navars))]
+  dt
 }
 
 raster_max <- function(sf1, sf2, resolution=200) {
