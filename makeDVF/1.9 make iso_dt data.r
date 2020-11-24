@@ -20,4 +20,7 @@ foot_ttm_50 <- iso_accessibilite(
   resolution=res,
   routing=foot_osrm,
   tmax=20,
-  ttm_out = TRUE)
+  ttm_out = TRUE, 
+  future=TRUE,
+  dir="e:/osrm23112020")
+  

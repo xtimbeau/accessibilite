@@ -11,11 +11,12 @@ iso_accessibilite <- function(
   routing,                         # défini le moteur de routage
   tmax=10L,                        # en minutes
   pdt=1L,
-  chunk=5000000,                    # paquet envoyé
+  chunk=5000000,                   # paquet envoyé
   future=TRUE,                  
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE, 
-  logs = localdata)
+  logs = localdata,
+  dir=NULL)                        # ne recalcule pas les groupes déjà calculés, attention !  
 {
   start_time <- Sys.time()
   
@@ -89,8 +90,9 @@ iso_accessibilite <- function(
   log_success("{length(ou_gr)} groupes, {k} subsampling")
   
   pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
+  if(is.null(dir)) 
+    dir <- tempdir()
   
-  dir <- tempdir()
   if(!is.null(routing$groupes)) 
     routing <- swap2tmp_routing(routing)
 
@@ -615,13 +617,25 @@ dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
   ttm_d
 }
 
+is.in.dir <- function(groupe, dir)
+{
+  lf <- list.files(dir)
+  str_c(groupe, ".csv")%in%lf
+}
+
 access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir)
 {
   spid <- get_pid(pids)
+  
   s_ou <- ou_4326[gr==groupe, .(id, lon, lat, x, y)]
+  log_debug("{spid} aog:{groupe} {k} {nrow(s_ou)}")
   
-  log_debug("{spid} aog {groupe} {k} {nrow(s_ou)}")
-  
+  if(ttm_out&&is.in.dir(groupe, dir))
+    {
+    log_success("carreau:{groupe} dossier:{dir}")
+    return(data.table(file = str_c(dir, "/", groupe, ".csv")))
+  }
+
   if(is.null(routing$ancres))
   {
     tic()
@@ -642,12 +656,12 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
       {
         delay <- 0
       }
-      log_debug("{spid} ttm_ou {nrow(ttm_ou$result)}")
+      log_debug("{spid} ttm_ou:{nrow(ttm_ou$result)}")
       
       # on filtre les cibles qui ne sont pas trop loin selon la distance euclidienne
       quoi_f <- minimax_euclid(from=ttm_ou$les_ou, to=quoi_4326, dist=vmaxmode(routing$mode)*(tmax+delay))
       
-      log_debug("{spid} quoi_f {nrow(quoi_f)}")
+      log_debug("{spid} quoi_f:{nrow(quoi_f)}")
       
       # distances entre les ancres et les cibles
       if(any(quoi_f))
@@ -714,7 +728,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           {
             ttm_d <- ttm[, .(fromId, toId, travel_time)]
           }
-          log_success("carreau:{groupe} {speed_log}")
+          log_success("{spid} carreau:{groupe} {speed_log}")
         }
         else 
         {
@@ -746,13 +760,14 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
     ttm_d2 <- ttm_d1[, .(npea=.N, npep=.N), by=fromId] [, gr:=groupe]
     ttm_d <- merge(ttm_d, ttm_d2, by="fromId")
   }
+  
   if(ttm_out)
   {
-    file <- stringr::str_c(dir, groupe, ".csv")
+    file <- stringr::str_c(dir,"/", groupe, ".csv")
     data.table::fwrite(ttm_d, file)
     ttm_d <- data.table::data.table(file=file)
   }
-  ttm_d
+ ttm_d
 }
 
 minimax_euclid <- function(from, to, dist)
@@ -763,8 +778,6 @@ minimax_euclid <- function(from, to, dist)
   dmin2to <- matrixStats::colMins(dfrom2to)
   dmin2to<=dist
 }
-
-
 
 # routing engines ---------------------
 

@@ -88,3 +88,12 @@ idf_dt <- merge(idf_dt, c200[, .(idINS200, Ind)], by="idINS200")
 distances <-c("to1", "to5","to10","to15","to20","to50", "to100")
 idf_dtm <- idf_dt %>% melt(measure.vars=distances, variable.name="seuil", value.name="temps")
 ggplot(idf_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass)/idf_dt[, sum(Ind)], col=seuil))+scale_y_continuous(labels=f2si2)
+
+# renommage des fichiers !!
+
+ls <- list.files("e:/osrm23112020/")
+walk(ls, ~{
+  nn <- str_c("e:/osrm23112020/",str_extract(.x, "N[:alnum:]*"), ".csv")
+  on <- str_c("e:/osrm23112020/", .x)
+  file.rename(from=on, to=nn)
+})
