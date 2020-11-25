@@ -59,16 +59,25 @@ graph2svg(isotime_Marseille, file="{DVFdata}/presentation/vv/isotime_Marseille 2
 
 ttr_r5_emp09_isotime_Marseille <- tm_shape(paca.mbr,bbox=bb759)+tm_rgb()+
                                   tm_shape(ttr_r5_emp09_Marseille)+tm_raster(style="cont",palette=heatrg)+
-                                  tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)
+                                  tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_emp09_isotime_Marseille, file="{DVFdata}/presentation/theophile/transit_emp09/cartes/marseille" %>% glue)
 
 tcar_osrm_emp09_isotime_Marseille <- tm_shape(paca.mbr,bbox=bb759)+tm_rgb()+
                                      tm_shape(tcar_osrm_emp09_Marseille)+tm_raster(style="cont",palette=heatrg)+
-                                     tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)
+                                     tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                     tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_emp09_isotime_Marseille, file="{DVFdata}/presentation/theophile/car_emp09/cartes/marseille" %>% glue)
 
-ttr_r5_po15_isotime_Marseille <- tm_shape(paca.mbr,bbox=bb759)+tm_rgb()+
-                                 tm_shape(ttr_r5_pop15_Marseille)+tm_raster(style="cont",palette=heatrg)+
-                                 tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)
+ttr_r5_pop15_isotime_Marseille <- tm_shape(paca.mbr,bbox=bb759)+tm_rgb()+
+                                  tm_shape(ttr_r5_pop15_Marseille)+tm_raster(style="cont",palette=heatrg)+
+                                  tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_pop15_isotime_Marseille, file="{DVFdata}/presentation/theophile/transit_P15pop/cartes/marseille" %>% glue)
 
 tcar_osrm_pop15_isotime_Marseille <- tm_shape(paca.mbr,bbox=bb759)+tm_rgb()+
                                      tm_shape(tcar_osrm_pop15_Marseille)+tm_raster(style="cont",palette=heatrg)+
-                                     tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)
+                                     tm_shape(riv,bbox=uu759$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                     tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_pop15_isotime_Marseille, file="{DVFdata}/presentation/theophile/car_P15pop/cartes/marseille" %>% glue)
+

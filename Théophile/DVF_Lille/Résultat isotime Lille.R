@@ -48,17 +48,25 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu59702$border) %>% st_
 
 ttr_r5_emp09_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
                               tm_shape(ttr_r5_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
-                              tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+                              tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)+
+                              tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_emp09_isotime_Lille, file="{DVFdata}/presentation/theophile/transit_emp09/cartes/lille" %>% glue)
 
 ttr_r5_pop15_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
                               tm_shape(ttr_r5_pop15_Lille)+tm_raster(style="cont",palette=heatrg)+
-                              tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+                              tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_emp09_isotime_Lille, file="{DVFdata}/presentation/theophile/transit_P15pop/cartes/lille" %>% glue)
 
 
 tcar_osrm_emp09_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
                                  tm_shape(tcar_osrm_emp09_Lille)+tm_raster(style="cont",palette=heatrg)+
-                                 tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+                                 tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_emp09_isotime_Lille, file="{DVFdata}/presentation/theophile/car_emp09/cartes/lille" %>% glue)
 
 tcar_osrm_pop15_isotime_Lille <- tm_shape(nrdcal.mbr,bbox=bb59702)+tm_rgb()+
                                  tm_shape(tcar_osrm_pop15_Lille)+tm_raster(style="cont",palette=heatrg)+
-                                 tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)
+                                 tm_shape(riv,bbox=uu59702$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_pop15_isotime_Lille, file="{DVFdata}/presentation/theophile/car_P15pop/cartes/lille" %>% glue)

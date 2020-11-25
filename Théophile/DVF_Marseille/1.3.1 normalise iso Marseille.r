@@ -14,7 +14,7 @@ iso_transit_50_r5_Marseille <- load_DVF("iso_transit_50_r5_Marseille")
 norm_tr <- iso_transit_50_r5_Marseille$bricks$EMP09/iso_transit_50_r5_Marseille$vars$EMP09
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_emp09_Marseille <- iso2time(iso_transit_50_r5_Marseille$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000,175000))
+ttr_r5_emp09_Marseille <- iso2time(iso_transit_50_r5_Marseille$EMP09, seuils=c(25000,50000,75000, 100000, 125000,150000,175000,200000,225000,250000))
 
 save_DVF(ttr_r5_emp09_Marseille)
 

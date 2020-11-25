@@ -47,16 +47,24 @@ riv <- riv %>% filter(Type=="Cours d'eau") %>% st_filter(uu33701$border) %>% st_
 
 ttr_r5_emp09_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
                                  tm_shape(ttr_r5_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
-                                 tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+                                 tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                 tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_emp09_isotime_Bordeaux, file="{DVFdata}/presentation/theophile/transit_emp09/cartes/bordeaux" %>% glue)
 
 ttr_r5_pop15_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
                                  tm_shape(ttr_r5_pop15_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
-                                 tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+                                 tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                 tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_pop15_isotime_Bordeaux, file="{DVFdata}/presentation/theophile/transit_P15pop/cartes/bordeaux" %>% glue)
 
 tcar_osrm_emp09_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
                                     tm_shape(tcar_osrm_emp09_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
-                                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+                                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                    tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_emp09_isotime_Bordeaux, file="{DVFdata}/presentation/theophile/car_emp09/cartes/bordeaux" %>% glue)
 
 tcar_osrm_pop15_isotime_Bordeaux <- tm_shape(aqui.mbr,bbox=bb33701)+tm_rgb()+
                                     tm_shape(tcar_osrm_pop15_Bordeaux)+tm_raster(style="cont",palette=heatrg)+
-                                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)
+                                    tm_shape(riv,bbox=uu33701$bbox)+tm_fill("dodgerblue",alpha=1)+
+                                    tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_pop15_isotime_Bordeaux, file="{DVFdata}/presentation/theophile/car_P15pop/cartes/bordeaux" %>% glue)
