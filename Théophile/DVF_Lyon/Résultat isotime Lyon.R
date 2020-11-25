@@ -62,22 +62,30 @@ graph2svg(isotime_Lyon, file="{DVFdata}/presentation/vv/isotime_Lyon 25k" %>% gl
 
 ttr_r5_pop_isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
   tm_shape(ttr_r5_pop15_Lyon)+tm_raster(style="cont",palette=heatrg)+
-  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)
+  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_pop_isotime_Lyon, file="{DVFdata}/presentation/theophile/transit_P15pop/cartes/lyon" %>% glue)
 
 # transports en commun --------- EMP09
 
 ttr_r5_emp09_isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
   tm_shape(ttr_r5_emp09_Lyon)+tm_raster(style="cont",palette=heatrg)+
-  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)
+  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(ttr_r5_emp09_isotime_Lyon, file="{DVFdata}/presentation/theophile/transit_emp09/cartes/lyon" %>% glue)
 
 # voiture --------- EMP09
 
 tcar_osrm_emp09_isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
                           tm_shape(tcar_osrm_emp09_Lyon)+tm_raster(style="cont",palette=heatrg)+
-                          tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)
+                          tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_emp09_isotime_Lyon, file="{DVFdata}/presentation/theophile/car_emp09/cartes/lyon" %>% glue)
 
 # voiture ---------- pop15
 
 tcar_osrm_pop15_isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
   tm_shape(tcar_osrm_pop15_Lyon)+tm_raster(style="cont",palette=heatrg)+
-  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)
+  tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
+  tm_layout(legend.title.size = 2, legend.text.size = 2)
+graph2svg(tcar_osrm_pop15_isotime_Lyon, file="{DVFdata}/presentation/theophile/car_P15pop/cartes/lyon" %>% glue)
