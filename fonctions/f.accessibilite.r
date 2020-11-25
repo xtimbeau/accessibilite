@@ -166,8 +166,8 @@ iso_accessibilite <- function(
       access[,gr:=NULL]
       message("...cumul")
       setnames(access, new="temps", old="travel_time")
-      all_times <- CJ(fromId=unique(access$fromId),temps=c(1:tmax), sorted=FALSE)
-      access <- merge(all_times, access, by=c("fromId", "temps"), all.x=TRUE)
+      timecrossou <- CJ(fromId=ou_4326$id,temps=c(1:tmax), sorted=FALSE)
+      access <- merge(timecrossou, access, by=c("fromId", "temps"), all.x=TRUE)
       for (v in opp_var) 
         set(access, i=which(is.na(access[[v]])), j=v, 0)
       setorder(access, fromId, temps)
@@ -217,7 +217,10 @@ iso_accessibilite <- function(
       message(mtime)
       log_success("{routing$string} en {mtime}")
       attr(res, "routing")<- ("{routing$string} en {mtime}" %>% glue)
-      }
+    }
+  message("...nettoyage")
+  plan(plan())
+  gc()
   res
   }
 
@@ -369,28 +372,38 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
   list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
 }
 
-swap2tmp_routing <- function(routing) {
+swap2tmp_routing <- function(routing, qs=TRUE) {
   if(is.null(routing$groupes))
     return(routing)
   if(!is.null(routing$tempdir))
     return(routing)
   dir <- tempdir()
   routing$time_table <- map_chr(routing$groupes, ~{
-    file <- "{dir}/{.x}.csv" %>% glue
-    fwrite(routing$time_table[[.x]], file=file)
+    file <- if(qs) 
+      "{dir}/{.x}.rda" %>% glue
+    else 
+      "{dir}/{.x}.csv" %>% glue
+    if(qs)
+      qs::qsave(routing$time_table[[.x]], file=file, preset="fast", nthreads=4)
+    else 
+      data.table::fwrite(routing$time_table[[.x]], file=file)
     file
   })
   routing$tempdir <- dir
+  gc()
   routing
   }
 
 get_routing <- function(routing, groupe) {
   if(is.null(routing$groupes))
     return(routing)
-  routing$time_table <- fread(routing$time_table[[groupe]])
+  ext <- str_extract(routing$time_table, "(?<=\\.)[:alnum:]*(?!\\.)")
+  if (ext=="csv")
+    routing$time_table <- data.table::fread(routing$time_table[[groupe]])
+  else
+    routing$time_table <- qs::qread(routing$time_table[[groupe]], nthreads=4)
   routing
 }
-
 
 vmaxmode <- function(mode)
 {
