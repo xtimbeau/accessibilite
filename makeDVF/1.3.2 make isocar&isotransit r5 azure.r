@@ -79,7 +79,7 @@ az_GPE_r5 <- foreach(i = iter(morceaux), .packages = pckgs44each) %dopar% {
   library("rJava")
   library("r5r")
   log_threshold(FATAL)
-  options(java.parameters = "-Xmx16G" )
+  options(java.parameters = "-Xmx24G" )
   getr5datafromAzFS(jeton_sas = jeton_sas, path="IDFMGPE")
   tr_r5 <- routing_setup_r5(
     path="IDFMGPE", 

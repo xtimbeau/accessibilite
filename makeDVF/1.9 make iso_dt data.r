@@ -82,8 +82,9 @@ korine <- iso_accessibilite(
   pdt=1,                          
   routing=fdt_idf_50)
 
+save_DVF(korine, rep="rda/isoIDF")
 torine <- iso2time(korine$c, c(1, 5, 10, 20, 30, 40, 50))
-
+save_DVF(torine, rep="rda/isoIDF")
 mm <- tm_shape(torine$to2)+tm_raster(style="cont", palette=heatrg)
 graph2svg(mm, file="test", textratio=3)
 torine_dt <- r2dt(torine, 200)
