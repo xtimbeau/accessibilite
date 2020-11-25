@@ -118,11 +118,11 @@ lload_DVF <- function(x)
 
 selectt <- function(.data, ...) .data %>% as_tibble %>% dplyr::select(...)
 
-graph2svg <- function(graph, file, height=16, width=20) {
+graph2svg <- function(graph, file, height=16, width=20, textratio=2) {
   env <- parent.frame()
   file <- glue(file, .envir=env)
   svglite::svglite(file = str_c(file, ".svg"), height=height, width=width, pointsize = 9)
-  print(graph)
+  print(graph, vp=grid::viewport(gp=grid::gpar(cex=textratio)))
   dev.off()
 }
 

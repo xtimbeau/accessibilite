@@ -10,18 +10,21 @@ iso2time <- function(isoraster, seuils)
   fisoinv <- function(x, isotimes, seuil)
   {
     xmax <- x[length(x)]
-    if(!is.na(xmax)&&xmax>=seuil) approx(y=isotimes, x=as.vector(x), xout=seuil)[["y"]]
+    if(!is.na(xmax)&&xmax>=seuil&&sum(!is.na(x))>1) approx(y=isotimes, x=as.vector(x), xout=seuil, rule=2)[["y"]]
     else NA
   }
+  
   isotimes <- names(isoraster) %>% str_extract("[:digit:]+") %>% as.numeric()
   
   with_progress({
     pb <- progressor(steps=length(seuils))
     rr <- future_map(seuils, ~ {
+      message(.x)
       bb <- calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))
       pb()
       bb
-    })})
+    })},
+    handlers=handler_progress(format=":bar :percent :eta", width=80))
   rr <- brick(rr)
   names(rr) <- str_c("to", f2si2(seuils))
   rr  

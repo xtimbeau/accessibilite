@@ -12,7 +12,6 @@ ttr_r5_emp09_Nantes <- iso2time(iso_transit_50_r5_Nantes$EMP09, seuils=c(25000,5
 
 save_DVF(ttr_r5_emp09_Nantes)
 
-
 # r5 pop
 norm_tr <- iso_transit_50_r5_Nantes$bricks$P15_POP/iso_transit_50_r5_Nantes$vars$P15_POP
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
