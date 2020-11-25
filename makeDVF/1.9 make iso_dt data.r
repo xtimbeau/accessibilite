@@ -30,10 +30,14 @@ rm(fdt_idf_50)
 # test ---------------------
 source("access.r")
 
-c200 <- load_DVF("c200") %>% st_drop_geometry() %>% as.data.table()
+c200 <- load_DVF("c200") 
 iris15 <- load_DVF("iris15")
 idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
 uu851 <- load_DVF("uu851")
+c200_idf <- c200 %>%
+  filter(st_within(., idf, sparse=FALSE)) %>%
+  st_drop_geometry() %>%
+  as.data.table()
 
 fdt_idf_50 <- load_DVF("fdt_idf_50") 
 fdt_idf_50 <- swap2tmp_routing(fdt_idf_50, qs=TRUE)
@@ -62,7 +66,7 @@ save_DVF(ist_ecomos)
 tm_shape(ist_ecomos)+tm_raster(style="cont", palette=heatrg)
 
 idf_dt <- r2dt(ist_ecomos, 200)
-idf_dt <- merge(idf_dt, c200[, .(idINS200, Ind)], by="idINS200")
+idf_dt <- merge(idf_dt, c200_idf[, .(idINS200, Ind)], by="idINS200")
 distances <-c("to1", "to5","to10","to15","to20","to50", "to100")
 idf_dtm <- idf_dt %>% melt(measure.vars=distances, variable.name="seuil", value.name="temps")
 ggplot(idf_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass)/after_stat(cummass), col=seuil))+scale_y_continuous(labels=f2si2)
@@ -83,13 +87,14 @@ korine <- iso_accessibilite(
   routing=fdt_idf_50)
 
 save_DVF(korine, rep="rda/isoIDF")
-torine <- iso2time(korine$c, c(1, 5, 10, 20, 30, 40, 50))
+torine <- iso2time(korine$c, c(0.5, 1, 5))
 save_DVF(torine, rep="rda/isoIDF")
-mm <- tm_shape(torine$to2)+tm_raster(style="cont", palette=heatrg)
+mm <- tm_shape(torine$to20)+tm_raster(style="cont", palette=heatrg)
 graph2svg(mm, file="test", textratio=3)
 torine_dt <- r2dt(torine, 200)
-torine_dt <- merge(torine_dt, c200[, .(idINS200, Ind)], by="idINS200")
-distances <-c("to2")
-tor_dtm <- torine_dt %>% melt(measure.vars=distances, variable.name="seuil", value.name="temps")
-gg <- ggplot(tor_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass), col=seuil))+scale_y_continuous(labels=f2si2)
+torine_dt <- merge(c200_idf[, .(idINS200, Ind)], torine_dt, by="idINS200")
+distances <-c("to1", "to5", "to10", "to20", "to30", "to40", "to50")
+tor_dtm <- torine_dt %>%
+  melt(measure.vars=distances, variable.name="seuil", value.name="temps")
+gg <- ggplot(tor_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass)/c200_idf[, sum(Ind)], col=seuil))+scale_y_continuous(labels=percent)
 graph2svg(gg, file="test2")

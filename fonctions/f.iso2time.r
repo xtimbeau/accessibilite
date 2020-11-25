@@ -22,18 +22,19 @@ iso2time <- function(isoraster, seuils)
   
   isotimes <- names(isoraster) %>% str_extract("[:digit:]+") %>% as.numeric()
   
-  # with_progress({
-    pb <- progressor(steps=length(seuils))
-    rr <- future_map(seuils, ~ {
-      message(.x)
-      bb <- calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))
-      pb()
-      bb
-    })
-    # },
-    # handlers=handler_progress(format=":bar :percent :eta", width=80))
+  with_progress(
+    {
+      pb <- progressor(steps=length(seuils))
+      rr <- future_map(seuils, ~ {
+        bb <- calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))
+        pb()
+        bb
+        })
+      },
+    handlers=handler_progress(format=":bar :percent :eta", width=80))
   rr <- brick(rr)
   names(rr) <- str_c("to", f2si2(seuils))
+  gc()
   rr  
   } 
 
