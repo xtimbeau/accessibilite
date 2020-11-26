@@ -119,9 +119,9 @@ compute_massity <- function(x, m, from, to, bw = "nrd0", adjust = 1,
     return(vctrs::new_data_frame(list(
       x = NA_real_,
       density = NA_real_,
-      scaled = NA_real_,
-      ndensity = NA_real_,
-      count = NA_real_,
+      mass = NA_real_,
+      cummass = NA_real_,
+      totalmass = NA_real_,
       n = NA_integer_
     ), n = 1))
   }
@@ -134,7 +134,7 @@ compute_massity <- function(x, m, from, to, bw = "nrd0", adjust = 1,
     density = dens$y,
     mass =  dens$y * tm,
     cummass = cumsum(dens$y*tm)*(max(dens$x)-min(dens$x))/n,
-    total_mass = tm,
+    totalmass = tm,
     n = nx
   ), n = length(dens$x))
 }

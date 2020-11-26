@@ -94,16 +94,14 @@ iso_GPE_200_r5 <-iso_accessibilite(
 save_DVF(iso_GPE_200_r5, rep="rda/iso200")
 
 tGPEr5_emp09 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
-save_DVF(tGPEr5_emp09)
+save_DVF(tGPEr5_emp09, rep="rda/iso200")
 
-save_DVF(ttrGPEr5_emp09)
 # voiture OSRM ------------------------------------------------------
 
 plan("multiprocess", workers=8)
 
 car_osrm <- routing_setup_osrm(server="5003", profile="driving")
 foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
-
 
 iso_car_50_osrm_idf <- iso_accessibilite(
   quoi=opp,                       
