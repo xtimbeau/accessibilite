@@ -12,9 +12,10 @@ iso2time <- function(isoraster, seuils)
     xmax <- max(x, na.rm=TRUE)
     xmin <- min(x, na.rm=TRUE)
     
-    if(xmax>=seuil&&
-       xmin<=seuil)
+    if(xmin<xmax&&xmax>=seuil&&xmin<=seuil)
+      {
       approx(y=isotimes, x=as.vector(x), xout=seuil)[["y"]]
+      }
     else 
       NA
   }
