@@ -21,7 +21,7 @@ save_DVF(ttr_r5_emp09_Bordeaux)
 norm_tr_Bordeaux <- iso_transit_50_r5_Bordeaux$bricks$P15_POP/iso_transit_50_r5_Bordeaux$vars$P15_POP
 isotimes_Bordeaux <- names(norm_tr_Bordeaux) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_pop15_Bordeaux <- iso2time(iso_transit_50_r5_Bordeaux$P15_POP, seuils=c(50000,100000,150000,200000,250000,300000))
+ttr_r5_pop15_Bordeaux <- iso2time(iso_transit_50_r5_Bordeaux$P15_POP, seuils=c(50000,100000,150000,200000,250000,300000,400000,500000))
 
 save_DVF(ttr_r5_pop15_Bordeaux)
 
@@ -32,7 +32,7 @@ iso_car_50_osrm_Bordeaux <- load_DVF("iso_car_50_osrm_Bordeaux")
 norm_car_Bordeaux <- iso_car_50_osrm_Bordeaux$bricks$EMP09/iso_car_50_osrm_Bordeaux$vars$EMP09
 isotimes_Bordeaux <- names(norm_car_Bordeaux) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_emp09_Bordeaux <- iso2time(iso_car_50_osrm_Bordeaux$EMP09, seuils=c(50000,100000,150000,200000,250000,300000))
+tcar_osrm_emp09_Bordeaux <- iso2time(iso_car_50_osrm_Bordeaux$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,400000,500000))
 
 save_DVF(tcar_osrm_emp09_Bordeaux)
 
@@ -41,7 +41,7 @@ save_DVF(tcar_osrm_emp09_Bordeaux)
 norm_car <- iso_car_50_osrm_Bordeaux$bricks$P15_POP/iso_car_50_osrm_Bordeaux$vars$P15_POP
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_pop15_Bordeaux <- iso2time(iso_car_50_osrm_Bordeaux$EMP09, seuils=c(50000,100000,150000,200000,250000,300000))
+tcar_osrm_pop15_Bordeaux <- iso2time(iso_car_50_osrm_Bordeaux$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,400000,500000))
 
 save_DVF(tcar_osrm_pop15_Bordeaux)
 

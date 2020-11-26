@@ -26,7 +26,7 @@ save_DVF(ttr_r5_emp09_Toulouse)
 norm_tr_Toulouse <- iso_transit_50_r5_Toulouse$bricks$P15_POP/iso_transit_50_r5_Toulouse$vars$P15_POP
 isotimes_Toulouse <- names(norm_tr_Toulouse) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_pop15_Toulouse <- iso2time(iso_transit_50_r5_Toulouse$P15_POP, seuils=c(50000,100000,150000,200000,250000,300000,350000))
+ttr_r5_pop15_Toulouse <- iso2time(iso_transit_50_r5_Toulouse$P15_POP, seuils=c(50000,100000,150000,200000,250000,300000,350000,400000,500000))
 
 save_DVF(ttr_r5_pop15_Toulouse)
 
@@ -39,7 +39,7 @@ iso_car_50_osrm_Toulouse <- load_DVF("iso_car_50_osrm_Toulouse")
 norm_car_Toulouse <- iso_car_50_osrm_Toulouse$bricks$EMP09/iso_car_50_osrm_Toulouse$vars$EMP09
 isotimes_Toulouse <- names(norm_car_Toulouse) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_emp09_Toulouse <- iso2time(iso_car_50_osrm_Toulouse$EMP09, seuils=c(50000, 100000,150000,200000,250000,300000,350000))
+tcar_osrm_emp09_Toulouse <- iso2time(iso_car_50_osrm_Toulouse$EMP09, seuils=c(50000, 100000,150000,200000,250000,300000,350000,400000,500000))
 
 save_DVF(tcar_osrm_emp09_Toulouse)
 
@@ -49,7 +49,7 @@ save_DVF(tcar_osrm_emp09_Toulouse)
 norm_car <- iso_car_50_osrm_Toulouse$bricks$P15_POP/iso_car_50_osrm_Toulouse$vars$P15_POP
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_pop15_Toulouse <- iso2time(iso_car_50_osrm_Toulouse$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,350000))
+tcar_osrm_pop15_Toulouse <- iso2time(iso_car_50_osrm_Toulouse$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,350000,400000,500000))
 
 save_DVF(tcar_osrm_pop15_Toulouse)
 
