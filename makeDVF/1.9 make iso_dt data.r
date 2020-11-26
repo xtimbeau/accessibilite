@@ -34,8 +34,7 @@ c200 <- load_DVF("c200")
 iris15 <- load_DVF("iris15")
 idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
 uu851 <- load_DVF("uu851")
-c200_idf <- c200 %>%
-  filter(st_within(., idf, sparse=FALSE)) %>%
+c200_idfdt <- c200_idf %>%
   st_drop_geometry() %>%
   as.data.table()
 
@@ -43,7 +42,7 @@ fdt_idf_50 <- load_DVF("fdt_idf_50")
 fdt_idf_50 <- swap2tmp_routing(fdt_idf_50, qs=TRUE)
 plan(multisession, workers=8)
 
-# ecomos -----------
+# ecomos -----------------
 # ne marche que pour l'idf, détail pour bcp d'espace vert, même les plus petits
 
 ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
@@ -87,14 +86,15 @@ korine <- iso_accessibilite(
   routing=fdt_idf_50)
 
 save_DVF(korine, rep="rda/isoIDF")
+korine <- load_DVF("isoIDF/korine")
 torine <- iso2time(korine$c, c(0.5, 1, 5))
 save_DVF(torine, rep="rda/isoIDF")
 mm <- tm_shape(torine$to20)+tm_raster(style="cont", palette=heatrg)
 graph2svg(mm, file="test", textratio=3)
 torine_dt <- r2dt(torine, 200)
-torine_dt <- merge(c200_idf[, .(idINS200, Ind)], torine_dt, by="idINS200")
-distances <-c("to1", "to5", "to10", "to20", "to30", "to40", "to50")
+torine_dt <- merge(c200_idfdt[, .(idINS200, Ind, dep)], torine_dt, by="idINS200")
+distances <-c("to0.5", "to1", "to5")
 tor_dtm <- torine_dt %>%
   melt(measure.vars=distances, variable.name="seuil", value.name="temps")
-gg <- ggplot(tor_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(cummass)/c200_idf[, sum(Ind)], col=seuil))+scale_y_continuous(labels=percent)
+gg <- ggplot(tor_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(mass), col=dep, fill=dep), position="stack")+scale_y_continuous(labels=uf2si2)+facet_wrap(~seuil)
 graph2svg(gg, file="test2")

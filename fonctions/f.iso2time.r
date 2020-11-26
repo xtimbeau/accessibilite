@@ -9,7 +9,6 @@ iso2time <- function(isoraster, seuils)
   
   fisoinv <- function(x, isotimes, seuil)
   {
-    tmax <- x[length(x)]
     xmax <- max(x, na.rm=TRUE)
     xmin <- min(x, na.rm=TRUE)
     
