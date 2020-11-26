@@ -1,4 +1,4 @@
-source("dvf.r")
+source("access.r")
 
 fisoinv <- function(x, isotimes, seuil=0.2)
 {
@@ -8,6 +8,7 @@ fisoinv <- function(x, isotimes, seuil=0.2)
 }
 
 iso_transit_50 <- load_DVF("iso_transit_50")$bricks$P15_POP
+iso_transit_50_vars <- load_DVF("iso_transit_50")$vars$P15_POP
 
 norm_tr <- iso_transit_50$bricks$EMP09/iso_transit_50$vars$EMP09
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
@@ -25,7 +26,7 @@ save_DVF(ttr_emp09)
 
 # Théophile
 
-norm_tr <- iso_transit_50$bricks$P15_POP/iso_transit_50$vars$P15_POP
+norm_tr <- iso_transit_50/iso_transit_50_vars
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
 
 ttr_r5_pop15_idf <- iso2time(iso_transit_50, seuils=c(50000,100000,150000,200000,250000,300000,400000,500000))
