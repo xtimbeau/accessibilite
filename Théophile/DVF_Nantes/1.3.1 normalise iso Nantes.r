@@ -16,7 +16,7 @@ save_DVF(ttr_r5_emp09_Nantes)
 norm_tr <- iso_transit_50_r5_Nantes$bricks$P15_POP/iso_transit_50_r5_Nantes$vars$P15_POP
 isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-ttr_r5_pop15_Nantes <- iso2time(iso_transit_50_r5_Nantes$P15_POP, seuils=c(50000,100000,150000,200000,250000))
+ttr_r5_pop15_Nantes <- iso2time(iso_transit_50_r5_Nantes$P15_POP, seuils=c(50000,100000,150000,200000,250000,300000,400000,500000))
 
 save_DVF(ttr_r5_pop15_Nantes)
 
@@ -27,7 +27,7 @@ iso_car_50_osrm_Nantes <- load_DVF("iso_car_50_osrm_Nantes")
 norm_car <- iso_car_50_osrm_Nantes$bricks$EMP09/iso_car_50_osrm_Nantes$vars$EMP09
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_emp09_Nantes <- iso2time(iso_car_50_osrm_Nantes$EMP09, seuils=c(50000, 100000,150000,200000,250000))
+tcar_osrm_emp09_Nantes <- iso2time(iso_car_50_osrm_Nantes$EMP09, seuils=c(50000, 100000,150000,200000,250000,300000,400000,500000))
 
 save_DVF(tcar_osrm_emp09_Nantes)
 
@@ -36,7 +36,7 @@ save_DVF(tcar_osrm_emp09_Nantes)
 norm_car <- iso_car_50_osrm_Nantes$bricks$P15_POP/iso_car_50_osrm_Nantes$vars$P15_POP
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
 
-tcar_osrm_pop15_Nantes <- iso2time(iso_car_50_osrm_Nantes$EMP09, seuils=c(50000,100000,150000,200000,250000))
+tcar_osrm_pop15_Nantes <- iso2time(iso_car_50_osrm_Nantes$EMP09, seuils=c(50000,100000,150000,200000,250000,300000,350000,400000,500000))
 
 save_DVF(tcar_osrm_pop15_Nantes)
 
