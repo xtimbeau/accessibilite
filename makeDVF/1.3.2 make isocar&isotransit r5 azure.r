@@ -61,6 +61,8 @@ az_r5 <- foreach(i = iter(morceaux), .packages = pckgs44each) %dopar% {
   rr
 }
 
+stopCluster(cluster)
+
 nn <- names(az_r5[[1]])
 names(nn) <- nn
 iso_tr_r5_50 <- map(nn, function(n) reduce(map(test_az, n), function(r1, r2) merge(r1, r2)))
@@ -97,6 +99,8 @@ az_GPE_r5 <- foreach(i = iter(morceaux), .packages = pckgs44each) %dopar% {
     routing=tr_r5)
   rr
 }
+
+stopCluster(cluster)
 
 nn <- names(az_GPE_r5[[1]])
 names(nn) <- nn

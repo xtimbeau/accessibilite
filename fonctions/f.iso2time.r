@@ -9,13 +9,13 @@ iso2time <- function(isoraster, seuils)
   
   fisoinv <- function(x, isotimes, seuil)
   {
-    tmax <- x[length(x)]
     xmax <- max(x, na.rm=TRUE)
     xmin <- min(x, na.rm=TRUE)
     
-    if(xmax>=seuil&&
-       xmin<=seuil)
+    if(xmin<xmax&&xmax>=seuil&&xmin<=seuil)
+      {
       approx(y=isotimes, x=as.vector(x), xout=seuil)[["y"]]
+      }
     else 
       NA
   }
@@ -25,13 +25,16 @@ iso2time <- function(isoraster, seuils)
   with_progress(
     {
       pb <- progressor(steps=length(seuils))
-      rr <- future_map(seuils, ~ {
-        bb <- calc(isoraster, fun= function(x) fisoinv(x, isotimes=isotimes, seuil=.x))
+      rr <- map(seuils, ~ {
+        ff <- substitute(function(x) fisoinv(x, isotimes=ii, seuil=ss), list(ii=isotimes, ss=.x))
+        ff <- compiler::cmpfun(eval(ff))
+        bb <- raster::calc(isoraster, fun=ff)
         pb()
         bb
         })
       },
-    handlers=handler_progress(format=":bar :percent :eta", width=80))
+    handlers=handler_progress(format=":bar :percent", width=80))
+  
   rr <- brick(rr)
   names(rr) <- str_c("to", f2si2(seuils))
   gc()
