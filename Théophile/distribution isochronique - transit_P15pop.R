@@ -5,7 +5,7 @@ c200 <- load_DVF("c200") %>% st_drop_geometry() %>% as.data.table()
 # méthode 2, en utilisant geom_massity comme geom_density, mais avec un calcul en plus: mass et cummass
 # on définit les données et les distances à grapher (dans l'ordre que l'on souhaite)
 
-idf_dt <- r2dt(load_DVF("iso200/iso_tr_200_r5"), 200)
+idf_dt <- r2dt(load_DVF("ttr_r5_pop15_idf"), 200)
 idf_dt <- merge(idf_dt, c200[, .(idINS200, Ind)], by="idINS200")
 lyon_dt <- r2dt(load_DVF("ttr_r5_pop15_Lyon"), 200) # le 200 indique qu'on recalcule le raster en résolution 200
 lyon_dt <- merge(lyon_dt, c200[, .(idINS200, Ind)], by="idINS200")
@@ -110,18 +110,18 @@ graph2svg(isotime_superposes_6sansparis, textratio = 1, file="{DVFdata}/presenta
 
 # on peut vouloir des fonctions en %
 data <- rbind(idf_dtm[, ville:="paris"], bordeaux_dtm[, ville:="bordeaux"],lyon_dtm[, ville:="lyon"], marseille_dtm[, ville:="marseille"], toulouse_dtm[, ville:="toulouse"], lille_dtm[, ville:="lille"], nantes_dtm[, ville:="nantes"])
-isotime_paris_plus_6_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass)/after_stat(total_mass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("Paris_plus_6_pourcentage transit pop15")
+isotime_paris_plus_6_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass)/after_stat(totalmass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("Paris_plus_6_pourcentage transit pop15")
 graph2svg(isotime_paris_plus_6_pourcentage, textratio = 1, file="{DVFdata}/presentation/theophile/transit_pop15/paris_plus_6_pourcentage" %>% glue)
 
 data <- rbind(bordeaux_dtm[, ville:="bordeaux"],lyon_dtm[, ville:="lyon"], marseille_dtm[, ville:="marseille"], toulouse_dtm[, ville:="toulouse"], lille_dtm[, ville:="lille"], nantes_dtm[, ville:="nantes"])
-isotime_6_sans_paris_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass)/after_stat(total_mass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("6_sans_Paris_pourcentage transit pop15")
+isotime_6_sans_paris_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(mass)/after_stat(totalmass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("6_sans_Paris_pourcentage transit pop15")
 graph2svg(isotime_6_sans_paris_pourcentage, textratio = 1, file="{DVFdata}/presentation/theophile/transit_pop15/6_sans_paris_pourcentage" %>% glue)
 
 # on peut vouloir des fonctions en % et en cumul
 data <- rbind(idf_dtm[, ville:="paris"], bordeaux_dtm[, ville:="bordeaux"],lyon_dtm[, ville:="lyon"], marseille_dtm[, ville:="marseille"], toulouse_dtm[, ville:="toulouse"], lille_dtm[, ville:="lille"], nantes_dtm[, ville:="nantes"])
-isotime_paris_plus_6_cumule_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass)/after_stat(total_mass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("Paris_plus_6_cumule_pourcentage transit pop15")
+isotime_paris_plus_6_cumule_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass)/after_stat(totalmass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("Paris_plus_6_cumule_pourcentage transit pop15")
 graph2svg(isotime_paris_plus_6_cumule_pourcentage, textratio = 1, file="{DVFdata}/presentation/theophile/transit_pop15/paris_plus_6_cumule_pourcentage" %>% glue)
 
 data <- rbind(bordeaux_dtm[, ville:="bordeaux"],lyon_dtm[, ville:="lyon"], marseille_dtm[, ville:="marseille"], toulouse_dtm[, ville:="toulouse"], lille_dtm[, ville:="lille"], nantes_dtm[, ville:="nantes"])
-isotime_6_sans_paris_cumule_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass)/after_stat(total_mass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("6_sans_Paris_cumule_pourcentage transit pop15")
+isotime_6_sans_paris_cumule_pourcentage <- ggplot(data)+geom_massity(aes(x=dist, mass=Ind, y=after_stat(cummass)/after_stat(totalmass), col=ville), alpha=0.5)+facet_wrap(~seuil)+theme(plot.title=(element_text(size=40)), legend.title=(element_text(size=30)), legend.text = element_text(size=25))+ggtitle("6_sans_Paris_cumule_pourcentage transit pop15")
 graph2svg(isotime_6_sans_paris_cumule_pourcentage, textratio = 1, file="{DVFdata}/presentation/theophile/transit_pop15/6_sans_paris_cumule_pourcentage" %>% glue)
