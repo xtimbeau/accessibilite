@@ -3,7 +3,7 @@
 # le seuil doit être donc atteint sur les couches (ou cela renverra NA)
 
 
-iso2time <- function(isoraster, seuils)
+iso2time_o <- function(isoraster, seuils=median(cellStats(isoraster, median)))
 {
   assertthat::assert_that(is.raster(isoraster)) 
   
@@ -49,4 +49,32 @@ isorenorme <- function(isoraster, facteur)
 is.raster <- function(x)
 {
   return((class(x)[1]=="RasterLayer" || class(x)[1]=="RasterBrick" || class(x)[1]=="RasterStack"))
+}
+
+iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
+{
+  assertthat::assert_that(is.raster(isoraster)) 
+  isotimes <- names(isoraster) %>% str_extract("[:digit:]+") %>% as.numeric()
+  mm <- isoraster %>% as.matrix
+  ncol <- ncol(mm)
+  nrow <- nrow(mm)
+  rr <- map(seuils, ~ {
+    cc_moins <- max.col(mm<=.x, ties.method = "last")
+    cc_plus <- max.col(mm>=.x, ties.method = "first")
+    nnas <- !is.na(cc_moins)
+    i_nnas <- which(nnas)
+    ind_moins <- i_nnas +(cc_moins[nnas]-1)*nrow
+    y_moins <- mm[ind_moins]
+    y_plus <- mm[i_nnas +(cc_plus[nnas]-1)*nrow]
+    out <- c(NA)
+    length(out) <- nrow
+    out[nnas] <- (.x-y_moins)/(y_plus-y_moins)*(isotimes[cc_plus[nnas]]-isotimes[cc_moins[nnas]])+isotimes[cc_moins[nnas]]
+    out[nnas] [y_moins>=y_plus] <- NA
+    res <- raster(isoraster)
+    values(res) <- out
+    res
+    })
+  rr <- brick(rr)
+  names(rr) <- str_c("to", f2si2(seuils))
+  rr  
 }
