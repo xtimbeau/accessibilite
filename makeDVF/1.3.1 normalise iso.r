@@ -49,7 +49,8 @@ save_DVF(ttr_pop15)
 
 # car ------------------
 
-iso_car_50 <- load_DVF("iso_car_50")
+iso_car_50 <- load_DVF("iso_car_50")$bricks$P15_POP
+iso_car_50_vars <- load_DVF("iso_car_50")$vars$P15_POP
 
 norm_car <- iso_car_50$bricks$EMP09/iso_car_50$vars$EMP09
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
@@ -64,6 +65,16 @@ tcar_emp09 <- brick(list(tcar_emp09_10, tcar_emp09_15, tcar_emp09_20, tcar_emp09
 names(tcar_emp09) <- c("emp10", "emp15", "emp20", "emp25", "emp30")
 
 save_DVF(tcar_emp09)
+
+#Théophile
+
+norm_tr <- iso_car_50/iso_car_50_vars
+isotimes <- names(norm_tr) %>% str_extract("[:digit:]+") %>% as.numeric()
+
+tcar_osrm_pop15_idf <- iso2time(iso_car_50, seuils=c(50000,100000,150000,200000,250000,300000,400000,500000))
+
+save_DVF(tcar_osrm_pop15_idf)
+
 
 norm_car <- iso_car_50$bricks$P15_POP/iso_car_50$vars$P15_POP
 isotimes <- names(norm_car) %>% str_extract("[:digit:]+") %>% as.numeric()
