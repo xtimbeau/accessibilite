@@ -95,5 +95,8 @@ torine_dt <- merge(c200_idfdt[, .(idINS200, Ind, dep)], torine_dt, by="idINS200"
 distances <-c("to0.5", "to1", "to5")
 tor_dtm <- torine_dt %>%
   melt(measure.vars=distances, variable.name="seuil", value.name="temps")
-gg <- ggplot(tor_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(mass), col=seuil, fill=seuil), alpha=0.5)+scale_y_continuous(labels=uf2si2)+facet_wrap(~dep)
+gg <- ggplot(tor_dtm[seuil=="to0.5"])+
+  geom_massity(aes(x=temps, mass=Ind, y=after_stat(mass), col=dep, fill=dep), alpha=0.5)+
+  scale_y_continuous(labels=uf2si2)+
+  facet_wrap(~dep)
 graph2svg(gg, file="test2")

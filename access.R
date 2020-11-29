@@ -45,13 +45,8 @@ rJava::.jinit()
 # fonctions utilisées
 message("Sources")
 
-source("./fonctions/f.communs.R", encoding="UTF-8")
-source("./fonctions/f.isochrones.R", encoding="UTF-8")
-source("./fonctions/f.optgetmod.r", encoding="UTF-8")
-source("./fonctions/f.map utils.r", encoding="UTF-8")
-source("./fonctions/f.accessibilite.r", encoding="UTF-8")
-source("./fonctions/f.iso2time.r", encoding="UTF-8")
-source("./fonctions/f.geom_massity.r", encoding="UTF-8")
+fonc <- list.files("./fonctions")
+walk(fonc, ~source(str_c("./fonctions/", .x)))
 
 # # calibri
 # font_import(prompt=FALSE)

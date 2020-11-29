@@ -16,7 +16,8 @@ iso_accessibilite <- function(
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE, 
   logs = localdata,
-  dir=NULL)                        # ne recalcule pas les groupes déjà calculés, attention !  
+  dir=NULL,
+  table2disk=if(!is.null(dir)) TRUE else FALSE)                        # ne recalcule pas les groupes déjà calculés, attention !  
 {
   start_time <- Sys.time()
   
@@ -90,8 +91,12 @@ iso_accessibilite <- function(
   log_success("{length(ou_gr)} groupes, {k} subsampling")
   
   pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
-  if(is.null(dir)) 
+  
+  if(table2disk & is.null(dir)) 
+  {
     dir <- tempdir()
+    walk(ou_gr, ~file.remove(str_c(dir,"/", .x,".*")))
+    }
   
   if(!is.null(routing$groupes)) 
     routing <- swap2tmp_routing(routing)
@@ -109,7 +114,7 @@ iso_accessibilite <- function(
         log_appender(logger::appender_file(logfile))
         pb()
         rrouting <- get_routing(routing, g)
-        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir)
+        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir,t2d=table2disk)
         },.options=furrr::furrr_options(seed=TRUE, 
                                         packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
                                         scheduling = 1))
@@ -131,7 +136,7 @@ iso_accessibilite <- function(
     gc()
     plan(plan()) # pour reprendre la mémoire
     access <- map(access$file,~{
-      tt <- fread(.x)
+      tt <- qs::qread(.x, n_threads=4)
       tt[, .(fromId, toId, travel_time)]
       setkey(tt, fromId)
       setindex(tt, toId)
@@ -155,6 +160,9 @@ iso_accessibilite <- function(
     }
   else
     {
+      if(table2disk)
+        access <- rbindlist(map(access$file,~qs::qread(.x, n_threads=4)))
+      
       npaires <- sum(access[, .(npaires=npep[[1]]), by=fromId][["npaires"]])
       access[, `:=`(npea=NULL, npep=NULL)]
       
@@ -507,17 +515,17 @@ is.in.dir <- function(groupe, dir)
   str_c(groupe, ".csv")%in%lf
 }
 
-access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir)
+access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir, t2d)
 {
   spid <- get_pid(pids)
   
   s_ou <- ou_4326[gr==groupe, .(id, lon, lat, x, y)]
   log_debug("{spid} aog:{groupe} {k} {nrow(s_ou)}")
   
-  if(ttm_out&&is.in.dir(groupe, dir))
+  if(t2d&&is.in.dir(groupe, dir))
     {
     log_success("carreau:{groupe} dossier:{dir}")
-    return(data.table(file = str_c(dir, "/", groupe, ".csv")))
+    return(data.table(file = str_c(dir, "/", groupe, ".rda")))
   }
 
   if(is.null(routing$ancres))
@@ -647,8 +655,8 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
   
   if(ttm_out)
   {
-    file <- stringr::str_c(dir,"/", groupe, ".csv")
-    data.table::fwrite(ttm_d, file)
+    file <- stringr::str_c(dir,"/", groupe, ".rda")
+    qs::qsave(ttm_d, file, preset="fast", nthreads = 4)
     ttm_d <- data.table::data.table(file=file)
   }
  ttm_d
