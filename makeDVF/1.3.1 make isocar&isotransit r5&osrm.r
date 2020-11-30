@@ -71,7 +71,7 @@ names(iso_tr_50_r5$P15_POP) <- names(isos_tr[[1]]$P15_POP)
 names(iso_tr_50_r5$cste) <- names(isos_tr[[1]]$cste)
 save_DVF(iso_tr_50_r5)
 
-ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
+ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(25000, 50000, 75000, 100000, 250000, 500000, 1000000, 2000000, 3000000, 4000000))
 save_DVF(ttrr5_emp09)
 
 # transit GPE r5------------------------------------------------------
@@ -112,8 +112,25 @@ iso_car_50_osrm_idf <- iso_accessibilite(
   tmax=120,                         
   pdt=5,                          
   routing=car_osrm)
+
 save_DVF(iso_car_50_osrm_idf, rep="rda")               
 
 tcarosrm_emp09 <- iso2time(iso_car_50_osrm_idf$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(tcarosrm_emp09)
-m_idf <- uu851$mbfdc+tm_shape(tcarosrm_emp09$to4M)+tm_raster(style="cont", palette=heatrg)+uu851$hdc
+
+# réunion des rasters par departement
+
+isos_car <- map(depIdf, ~load_DVF("iso75/isocar50osrmd{.x}"))
+
+iso_car_50_osrm <-list(
+  EMP09 = do.call(raster::merge, map(isos_car, "EMP09")),
+  P15_POP = do.call(raster::merge, map(isos_car, "P15_POP")),
+  cste = do.call(raster::merge, map(isos_car, "cste")))
+
+names(iso_car_50_osrm$EMP09) <- names(isos_car[[1]]$EMP09)
+names(iso_car_50_osrm$P15_POP) <- names(isos_car[[1]]$P15_POP)
+names(iso_car_50_osrm$cste) <- names(isos_car[[1]]$cste)
+save_DVF(iso_car_50_osrm)
+
+tcarosrm_emp09 <- iso2time(iso_car_50_osrm$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
+save_DVF(tcarosrm_emp09)

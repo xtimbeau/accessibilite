@@ -236,7 +236,7 @@ iso_accessibilite <- function(
 
 # iso_ouetquoi projette sur 4326 les coordonnées et fabrique les grilles nécessaires en donnant en sortie les ou et quoi utilisés pour ttm
 
-iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=5)
+iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mean", resolution=res_quoi, rf=5)
 {
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
@@ -247,18 +247,19 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
       quoi <- quoi %>% st_buffer(resolution/5)
     
     quoi <- quoi %>% st_transform(3035)
+    quoi_surf <- st_area(quoi) %>% as.numeric
     gc()
     rrr_3035 <- 
       brick(
         map(
           opp_var,
           ~(
-            fasterize(
-              quoi,
+            fasterize::fasterize(
+              quoi %>% mutate(field = get(.x)/quoi_surf),
               raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
-              fun=fun_quoi,
+              fun="sum",
               background=0,
-              field=.x))))
+              field="field")*(resolution/rf)^2)))
     rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
     xy_3035 <- raster::coordinates(rr_3035)
     quoi_3035 <- data.table(rr_3035 %>% as.data.frame(),

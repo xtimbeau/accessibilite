@@ -36,7 +36,7 @@ iso2time_o <- function(isoraster, seuils=median(cellStats(isoraster, median)))
     handlers=handler_progress(format=":bar :percent", width=80))
   
   rr <- brick(rr)
-  names(rr) <- str_c("to", f2si2(seuils))
+  names(rr) <- str_c("to", uf2si2(seuils, unit="multi"))
   gc()
   rr  
   } 
@@ -58,23 +58,28 @@ iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
   mm <- isoraster %>% as.matrix
   ncol <- ncol(mm)
   nrow <- nrow(mm)
-  rr <- map(seuils, ~ {
-    cc_moins <- max.col(mm<=.x, ties.method = "last")
-    cc_plus <- max.col(mm>=.x, ties.method = "first")
-    nnas <- !is.na(cc_moins)
-    i_nnas <- which(nnas)
-    ind_moins <- i_nnas +(cc_moins[nnas]-1)*nrow
-    y_moins <- mm[ind_moins]
-    y_plus <- mm[i_nnas +(cc_plus[nnas]-1)*nrow]
-    out <- c(NA)
-    length(out) <- nrow
-    out[nnas] <- (.x-y_moins)/(y_plus-y_moins)*(isotimes[cc_plus[nnas]]-isotimes[cc_moins[nnas]])+isotimes[cc_moins[nnas]]
-    out[nnas] [y_moins>=y_plus] <- NA
-    res <- raster(isoraster)
-    values(res) <- out
-    res
-    })
-  rr <- brick(rr)
-  names(rr) <- str_c("to", f2si2(seuils))
-  rr  
+  with_progress(
+    {
+      pb <- progressor(steps=length(seuils))
+      rr <- map(seuils, ~ {
+        cc_moins <- max.col(mm<=.x, ties.method = "last")
+        cc_plus <- max.col(mm>=.x, ties.method = "first")
+        nnas <- !is.na(cc_moins)
+        i_nnas <- which(nnas)
+        ind_moins <- i_nnas +(cc_moins[nnas]-1)*nrow
+        y_moins <- mm[ind_moins]
+        y_plus <- mm[i_nnas +(cc_plus[nnas]-1)*nrow]
+        out <- c(NA)
+        length(out) <- nrow
+        out[nnas] <- (.x-y_moins)/(y_plus-y_moins)*(isotimes[cc_plus[nnas]]-isotimes[cc_moins[nnas]])+isotimes[cc_moins[nnas]]
+        out[nnas] [y_moins>=y_plus] <- NA   
+        res <- raster(isoraster)
+        values(res) <- out
+        pb
+        res
+        })
+      })
+      rr <- brick(rr)
+      names(rr) <- str_c("to", uf2si2(seuils, rounding=FALSE, unit="multi"))
+      rr  
 }
