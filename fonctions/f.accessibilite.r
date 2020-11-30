@@ -114,7 +114,7 @@ iso_accessibilite <- function(
         log_appender(logger::appender_file(logfile))
         pb()
         rrouting <- get_routing(routing, g)
-        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir,t2d=table2disk)
+        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         },.options=furrr::furrr_options(seed=TRUE, 
                                         packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
                                         scheduling = 1))
@@ -124,7 +124,7 @@ iso_accessibilite <- function(
         access <- purrr::map(ou_gr, function(g) {
           pb()
           rrouting <- get_routing(routing, g)
-          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir)
+          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         })
         }
     access <- rbindlist(access)
@@ -512,7 +512,7 @@ dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
 is.in.dir <- function(groupe, dir)
 {
   lf <- list.files(dir)
-  str_c(groupe, ".csv")%in%lf
+  str_c(groupe, ".rda")%in%lf
 }
 
 access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir, t2d)
@@ -653,7 +653,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
     ttm_d <- merge(ttm_d, ttm_d2, by="fromId")
   }
   
-  if(ttm_out)
+  if(t2d)
   {
     file <- stringr::str_c(dir,"/", groupe, ".rda")
     qs::qsave(ttm_d, file, preset="fast", nthreads = 4)
