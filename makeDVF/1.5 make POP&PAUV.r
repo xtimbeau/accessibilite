@@ -1,73 +1,47 @@
-source("DVF.r")
+source("access.r")
 
 # on traite quelques équipements avec une isochrone à pied
 # dans un premier temps on regarde surtout les crêches (D502)
 
-c200idf <- load_DVF("c200idf") %>% st_transform(3035)
-iris <- load_DVF("iris") %>% st_transform(3035)
-bbPC <- st_bbox(st_union(iris %>% filter(DEP %in% c("75"))))
-uu <- filter(iris, UU2010==851) %>% pull(INSEE_COM)
-didf.sf <- iris %>% 
-  filter(DEP%in%depIdf) %>%
-  group_by(DEP) %>% 
-  summarize(P15_POP=sum(P15_POP), 
-            EMP09=sum(EMP09, na.rm=TRUE), 
-            UU2010=list(UU2010))
+c200 <- load_DVF("c200")
+iris15 <- load_DVF("iris15")
+idf4km <- iris15 %>% filter(UU2010=="00851") %>% st_union() %>% st_buffer(4000)
+idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
+c200_idf <- c200 %>% filter(st_within(., idf, sparse=FALSE))
+c200_75 <- c200 %>% filter(dep=="75")
+c200_mtrl <- c200 %>% filter(Depcom=="93048")
+rm(c200)
+iris15 <- load_DVF("iris15")
+idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
+c200_idfdt <- c200_idf %>%
+  st_drop_geometry() %>%
+  as.data.table()
 
 # population -> POP et PAUV ------------------------------------
 
-otpcs <- future_map(3:4, ~OTP_server(router=str_c("IDF",.), port=8400+10*., memory = "8G", rep=localdata))
-otpc <- otpcs[[1]]
+fdt_idf_50 <- load_DVF("fdt_idf_50") %>% swap2tmp_routing()
+plan("multiprocess", workers=8)
 
-plan("multiprocess", workers=4)
-param <- list(otpcon=otpc,
-              date = "12-17-2019", time = "08:00:00",
-              cutoffs=c(300, 600, 900),
-              walkReluctance=2,
-              maxWalkDistance=10000,
-              precisionMeters=10,
-              offRoadDistanceMeters=50,
-              mode="WALK")
+pop <- iso_accessibilite(
+  quoi=c200_idf %>% 
+    select(Ind, Men, Men_pauv) %>% 
+    mutate(cste = 1),
+  ou=c200_idf,                       
+  resolution=50,                    
+  tmax=20,                         
+  pdt=1,                          
+  routing=fdt_idf_50)
+pop200 <- map(pop, ~aggregate(.x, 4))
+densite <- r2dt(pop200$Ind/pop200$cste/0.04)
+txpauv <- r2dt(pop200$Men_pauv/pop200$Ind)
 
-g_pos <- c200idf %>% 
-  filter(Ind>0) %>%
-  st_transform(4326) 
-coords <- st_coordinates(st_centroid(g_pos)) 
-g_pos <- g_pos %>% 
-  as_tibble %>% 
-  transmute(Depcom,
-            X=coords[, "X"],
-            Y=coords[, "Y"])
-
-pop <- future_kernel_isochronique(sf=c200idf %>% 
-                                    select(Ind, Men, Men_pauv) %>% 
-                                    mutate(cste = 1),
-                                  positions=g_pos,
-                                  param=param,
-                                  res_fac=4,
-                                  progress = TRUE,
-                                  n_split=2*nbrOfWorkers(),
-                                  
-                                  otpserver=otpcs)
-
-pop.sf <- pop %>% st_as_sf(crs=4326, coords=c("X","Y")) %>% st_transform(3035)
-pop.sf <- pop.sf %>% mutate(PAUV15_5 = ifelse(Men_300>0, Men_pauv_300/Men_300, 0),
-                            PAUV15_10 = ifelse(Men_600>0, Men_pauv_600/Men_600, 0),
-                            PAUV15_15 = ifelse(Men_900>0, Men_pauv_900/Men_900, 0),
-                            POP15_5 = Ind_300/cste_300/0.04, # on calcule la densité, un carreau fait 0.04km²
-                            POP15_10 = Ind_600/cste_600/0.04, # on calcule la densité, un carreau fait 0.04km²
-                            POP15_15 = Ind_900/cste_900/0.04)
-
-# popisokernel <- st_join(c200idf %>% select(IdINSPIRE), pop.sf, join=st_contains)
-
-popisokernel <- pop.sf %>% 
-  mutate(IdINS_200 = point_on_idINS(pop.sf, resolution=200))
+popisokernel <- merge(densite[,-c("x","y")], txpauv[,-c("x","y")], by="idINS200", suffix=c(".densite", ".txpauv"))
 
 save_DVF(popisokernel)
 
 # hauteur des immeubles du voisinage ------------------
 
-batiments.ff2019 <- vroom("{localdata}/batiments.ff2019.csv" %>% glue, 
+batiments.ff2019 <- vroom("{DVFdata}/rda/csv sources/batiments.ff2019.csv" %>% glue, 
                           col_types = cols_only(idbat="c", dnbniv="d",
                                                 stoth="d", stotdsueic="d", stotd="d", slocal="d",
                                                 sprincp="d", ssecp="d", sparkp="d",sparkncp="d",
