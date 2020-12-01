@@ -55,7 +55,7 @@ CORINE_idf <- CORINE_fr %>%
   filter(st_intersects(., uu851$iris %>% st_union %>% st_buffer(2000), sparse=FALSE))
 
 korine <- iso_accessibilite(
-  quoi=CORINE_idf %>% transmute(c=1),
+  quoi=CORINE_idf %>% transmute(c=1, s=as.numeric(st_area(CORINE_idf))),
   ou=c200_idf,                       
   resolution=50,                    
   tmax=20,                         
@@ -64,8 +64,8 @@ korine <- iso_accessibilite(
 
 save_DVF(korine, rep="rda/isoIDF")
 korine <- load_DVF("isoIDF/korine")
-torine <- iso2time(korine$c, c(0.5, 1, 5))
-mm <- tm_shape(torine$to0.5)+tm_raster(style="cont", palette=heatrg)
+torine <- iso2time(korine$c, c(0.02, 0.05, 0.1))
+mm <- tm_shape(torine$to50m)+tm_raster(style="cont", palette=heatrg)
 graph2svg(mm, file="test", textratio=3)
 torine_dt <- r2dt(torine, 200)
 torine_dt <- merge(c200_idfdt[, .(idINS200, Ind, dep)], torine_dt, by="idINS200")

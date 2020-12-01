@@ -241,13 +241,27 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
   {
-    if((!is.finite(res_quoi))) 
+    if(!is.finite(res_quoi)) 
       res_quoi <- resolution
+    
     if("sfc_POINT" %in% class(st_geometry(quoi))) 
-      quoi <- quoi %>% st_buffer(resolution/5)
+    {
+      rf <- 1
+      qxy <- quoi %>%
+        st_transform(3035) %>% 
+        st_coordinates()
+      qins <- idINS3035(qxy, resolution=res_quoi)
+      qag <- quoi %>% 
+        st_drop_geometry() %>% 
+        as.data.frame() %>%
+        as.data.table()
+      qag <- qag[, id:=qins] [, lapply(.SD, sum), by=id, .SDcols=opp_var]
+      qag[, geometry:=idINS2square(qag$id, resolution=res_quoi)]
+      quoi <- st_as_sf(qag) 
+      }
     
     quoi <- quoi %>% st_transform(3035)
-    quoi_surf <- st_area(quoi) %>% as.numeric
+    quoi_surf <- st_area(quoi) %>% as.numeric()
     gc()
     rrr_3035 <- 
       brick(
@@ -260,7 +274,10 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
               fun="sum",
               background=0,
               field="field")*(resolution/rf)^2)))
-    rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
+    if(rf>1) 
+      rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
+    else
+      rr_3035 <- rrr_3035
     xy_3035 <- raster::coordinates(rr_3035)
     quoi_3035 <- data.table(rr_3035 %>% as.data.frame(),
                             x=xy_3035[,1] %>% round(), 
@@ -289,7 +306,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
   quoi_4326[, `:=`(lon = xy_4326[, 1],
                    lat = xy_4326[, 2],
                    x= xy_3035[,1] %>% round(),
-                   y=xy_3035[,2] %>% round())]
+                   y= xy_3035[,2] %>% round())]
   quoi_4326[, id := .I]
   setkey(quoi_4326, id)
   
