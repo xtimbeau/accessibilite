@@ -530,7 +530,7 @@ dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
 is.in.dir <- function(groupe, dir)
 {
   lf <- list.files(dir)
-  str_c(groupe, ".csv")%in%lf
+  str_c(groupe, ".rda")%in%lf
 }
 
 access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir, t2d)
@@ -671,7 +671,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
     ttm_d <- merge(ttm_d, ttm_d2, by="fromId")
   }
   
-  if(ttm_out)
+  if(t2d)
   {
     file <- stringr::str_c(dir,"/", groupe, ".rda")
     qs::qsave(ttm_d, file, preset="fast", nthreads = 4)

@@ -31,7 +31,7 @@ walk(c("75", "91", "92", "93"), ~{
     time_window=60,
     montecarlo = 100, 
     percentiles = 5L,
-    n_threads = 4)
+    n_threads = 2)
   rr <- iso_accessibilite(
     quoi=opp,            
     ou=c200_idf %>% filter(dep==.x),          
@@ -49,7 +49,7 @@ walk(c("94"), ~{
     time_window=60,
     montecarlo = 100, 
     percentiles = 5L,
-    n_threads = 8)
+    n_threads = 4)
   rr <- iso_accessibilite(
     quoi=opp,            
     ou=c200_idf %>% filter(dep==.x),          
@@ -76,25 +76,22 @@ save_DVF(ttrr5_emp09)
 
 # transit GPE r5------------------------------------------------------
 log_threshold(SUCCESS)
-
-walk(c("91", "92", "93", "77", "78", "91", "94" ,"95"), ~{
-  trGPE_r5 <- routing_setup_r5(path="{DVFdata}/r5r_data/IDFMGPE" %>% glue,
-                               mode=c("WALK", "TRANSIT"),
-                               time_window=60,  
-                               montecarlo = 100, 
-                               percentiles = 5L,
-                               n_threads = 8)
-  rr <-iso_accessibilite(
+trGPE_r5 <- routing_setup_r5(
+  path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, 
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 100, 
+  percentiles = 5L,
+  n_threads = 4)
+rr <- iso_accessibilite(
     quoi=opp, 
-    ou=c200_idf %>% filter(dep==.x),
+    ou=c200_idf %>% filter(dep%in%c("77", "78", "94" ,"95")),
     resolution=50, 
     tmax=90,
     pdt=5, 
-    routing=trGPE_r5)
-  save_DVF(rr, "isoGPE50r5d{.x}" %>% glue, rep="rda/iso75")
-  r5r::stop_r5(trGPE_r5)
-  gc()
-  })
+    routing=trGPE_r5,
+    dir=str_c(localdata, "/GPEr5"))
+save_DVF(rr, "isoGPE50r5d77789495" %>% glue, rep="rda/iso75")
 
 save_DVF(iso_GPE_50_r5, rep="rda/isoIDF")
 

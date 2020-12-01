@@ -39,7 +39,7 @@ options(dplyr.summarise.inform=FALSE)
 rasterOptions(maxmemory=Inf, memfrac=0.9)
 registerDoFuture()
 
-options(java.parameters = "-Xmx48G" )
+options(java.parameters = "-Xmx24G" )
 rJava::.jinit()
 
 # fonctions utilisées
