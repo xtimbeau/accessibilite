@@ -9,7 +9,7 @@ idf_dt <- merge(idf_dt, c200[, c("idINS200", "Ind", "dep")] , by="idINS200")
 seuils <- names(idf_dt) %>% keep(~str_detect(.x,"to"))
 idf_dtm <- idf_dt %>% melt(measure.vars=seuils, variable.name="seuil", value.name="temps")
 idf_dtm[, seuil:=if2si2(seuil)]
-idf <- ggplot(idf_dtm, aes(x=temps, y=after_stat(mass), mass=Ind, col=dep, fill=dep))+
+idf <- ggplot(idf_dtm[seuil==100000,], aes(x=temps, y=after_stat(mass), mass=Ind, col=dep, fill=dep))+
   geom_massity(alpha=0.5, position="stack")+
   scale_y_continuous(labels=uf2si2)+
   facet_wrap(~seuil, labeller=function(x) f2si2df(x, "emplois"))

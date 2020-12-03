@@ -97,6 +97,18 @@ save_DVF(iso_GPE_50_r5, rep="rda/isoIDF")
 
 tGPEr5_emp09 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(tGPEr5_emp09, rep="rda/iso200")
+# résolution 200
+
+rr200 <- iso_accessibilite(
+  quoi=opp, 
+  ou=c200_idf,
+  resolution=200, 
+  tmax=90,
+  pdt=5, 
+  routing=trGPE_r5,
+  dir=str_c(localdata, "/GPEr5200"))
+save_DVF(rr200, "isoGPE50r5" %>% glue, rep="rda/iso75")
+
 
 # car OSRM ------------------------------------------------------
 

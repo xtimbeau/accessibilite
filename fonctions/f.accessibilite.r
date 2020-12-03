@@ -32,7 +32,7 @@ iso_accessibilite <- function(
   # 5. cumule
   # 6. rasterize
   
-  dir.create("{logs}/logs" %>% glue, showWarnings = FALSE)
+  dir.create("{logs}/logs" %>% glue, showWarnings = FALSE, recursive=TRUE)
   timestamp <- lubridate::stamp("15-01-20 10h08.05", orders = "dmy HMS", quiet=TRUE) (lubridate::now())
   logfile <- glue("{logs}/logs/iso_accessibilite.{routing$type}.{timestamp}.log")
   log_appender(appender_file(logfile))
@@ -104,15 +104,15 @@ iso_accessibilite <- function(
   message("...calcul des temps de parcours")
 
   with_progress({
-    pb <- progressor(steps=length(ou_gr))
+    pb <- progressor(steps=sum(groupes$Nous))
     if(routing$future&future)
     {
       plan(plan())
       lt <- log_threshold()
-      access <- furrr::future_map( ou_gr, function(g) {
+      access <- furrr::future_map(ou_gr, function(g) {
         log_threshold(lt)
         log_appender(logger::appender_file(logfile))
-        pb()
+        pb(amount=groupes$Nous[[g]])
         rrouting <- get_routing(routing, g)
         access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         },.options=furrr::furrr_options(seed=TRUE, 
@@ -122,7 +122,7 @@ iso_accessibilite <- function(
     else
       {
         access <- purrr::map(ou_gr, function(g) {
-          pb()
+          pb(amount=groupes$Nous[[g]])
           rrouting <- get_routing(routing, g)
           access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         })
@@ -394,8 +394,10 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
     out_ou[, `:=`(gr=idINS)]
     ou_gr <- set_names(as.character(unique(out_ou$gr)))
   }
+  Nous <- out_ou[, .N, by=gr]
+  Nous <- set_names(Nous$N, Nous$gr)
   log_success("taille:{f2si2(size)} gr:{f2si2(ngr)} res_gr:{resolution}")
-  list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
+  list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling, Nous=Nous)
 }
 
 swap2tmp_routing <- function(routing, qs=TRUE) {
@@ -542,7 +544,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
   
   if(t2d&&is.in.dir(groupe, dir))
     {
-    log_success("carreau:{groupe} dossier:{dir}")
+    log_success("{spid} carreau:{groupe} dossier:{dir}")
     return(data.table(file = str_c(dir, "/", groupe, ".rda")))
   }
 
@@ -584,7 +586,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
 
       if(!is.null(ttm_0$error)) 
       {
-        log_warn("carreau:{groupe} ou_id:{les_ou_s} erreur ttm_0 {ttm_0$error}")
+        log_warn("{spid} carreau:{groupe} ou_id:{les_ou_s} erreur ttm_0 {ttm_0$error}")
         ttm_0 <- data.table()
       }
       else 
@@ -619,8 +621,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           npea <- sum(paires_fromId$npea)
           npep <- sum(paires_fromId$npep)
           
-          speed_log <-stringr::str_c(spid,
-                            length(pproches),
+          speed_log <-stringr::str_c(length(pproches),
                             " ancres ", f2si2(npea),
                             "@",f2si2(npea/dtime),"p/s demandees, ",
                             f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
@@ -643,20 +644,20 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
         else 
         {
           ttm_d <- NULL
-          log_warn("carreau:{groupe} ttm vide") 
+          log_warn("{spid} carreau:{groupe} ttm vide") 
         }
       } # close nrow(ttm_0)>0
       else # nrow(ttm_0)==0
       {
         time <- toc(quiet=TRUE)
-        log_warn("carreau:{groupe} ou_id:{les_ou_s} ttm_0 vide")
+        log_warn("{spid} carreau:{groupe} ou_id:{les_ou_s} ttm_0 vide")
         log_warn("la matrice des distances entre les ancres et les opportunites est vide")
         ttm_d <- NULL
       }
     }
     else  # nrow(ttm_ou)==0
     {
-      log_warn("paquet:{groupe} ou_id:{les_ou_s} ttm_ou vide")
+      log_warn("{spid} carreau:{groupe} ou_id:{les_ou_s} ttm_ou vide")
       log_warn("la matrice des distances interne au carreau est vide")
       ttm_d <- NULL}
   }
