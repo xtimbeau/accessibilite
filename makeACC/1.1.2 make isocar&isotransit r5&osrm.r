@@ -75,14 +75,7 @@ ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(25000, 50000, 75000, 100000
 save_DVF(ttrr5_emp09)
 
 # transit GPE r5------------------------------------------------------
-log_threshold(SUCCESS)
-trGPE_r5 <- routing_setup_r5(
-  path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, 
-  mode=c("WALK", "TRANSIT"),
-  time_window=60,
-  montecarlo = 100, 
-  percentiles = 5L,
-  n_threads = 4)
+
 rr <- iso_accessibilite(
     quoi=opp, 
     ou=c200_idf %>% filter(dep%in%c("77", "78", "94" ,"95")),
@@ -97,7 +90,15 @@ save_DVF(iso_GPE_50_r5, rep="rda/isoIDF")
 
 tGPEr5_emp09 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(tGPEr5_emp09, rep="rda/iso200")
+
 # résolution 200
+trGPE_r5 <- routing_setup_r5(
+  path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, 
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 100, 
+  percentiles = 5L,
+  n_threads = 8)
 
 rr200 <- iso_accessibilite(
   quoi=opp, 
@@ -107,7 +108,7 @@ rr200 <- iso_accessibilite(
   pdt=5, 
   routing=trGPE_r5,
   dir=str_c(localdata, "/GPEr5200"))
-save_DVF(rr200, "isoGPE50r5" %>% glue, rep="rda/iso75")
+save_DVF(rr200, "isoGPE200r5" %>% glue, rep="rda/iso200")
 
 
 # car OSRM ------------------------------------------------------

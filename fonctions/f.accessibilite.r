@@ -136,7 +136,7 @@ iso_accessibilite <- function(
     gc()
     plan(plan()) # pour reprendre la mémoire
     access <- map(access$file,~{
-      tt <- qs::qread(.x, n_threads=4)
+      tt <- qs::qread(.x, nthreads=4)
       tt[, .(fromId, toId, travel_time)]
       setkey(tt, fromId)
       setindex(tt, toId)
@@ -161,7 +161,7 @@ iso_accessibilite <- function(
   else
     {
       if(table2disk)
-        access <- rbindlist(map(access$file,~qs::qread(.x, n_threads=4)))
+        access <- rbindlist(map(access$file,~qs::qread(.x, nthreads=4)))
       
       npaires <- sum(access[, .(npaires=npep[[1]]), by=fromId][["npaires"]])
       access[, `:=`(npea=NULL, npep=NULL)]
