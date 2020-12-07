@@ -45,7 +45,7 @@
   # pas de transports en commun
   # rapide pour la voiture, y compris pour des temps longs
   
-  car_osrm_Lyon <- routing_setup_osrm(server="5002", profile="driving")
+  car_osrm_Lyon <- routing_setup_osrm(server="5001", profile="driving")
   foot_osrm_Lyon <- routing_setup_osrm(server="5002", profile="walk")
   
   iso_car_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
@@ -58,6 +58,28 @@
   save_DVF(iso_car_50_osrm_Lyon)
   
   tm_shape(iso_car_50_osrm_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
+  
+  
+  c200 <- load_DVF("c200")
+  iris15 <- load_DVF("iris15")
+  rha4km <- iris15 %>% filter(UU2010=="00758") %>% st_union() %>% st_buffer(4000)
+  rha <- iris15 %>% filter(UU2010=="00758") %>% st_union()
+  c200_rha <- c200 %>% filter(st_within(., rha, sparse=FALSE))
+  CORINE_fr <- load_DVF("CORINE_fr")
+  CORINE_rha <- CORINE_fr %>%
+    filter(Code_18%in%c(141,142)|str_detect(Code_18, "^3")|str_detect(Code_18, "^4")) %>%
+    filter(st_intersects(., rha4km, sparse=FALSE))
+  
+  korine <- iso_accessibilite(
+    quoi=CORINE_rha %>% transmute(c=1),
+    ou=c200_rha,                      
+    resolution=50,                    
+    tmax=20,                        
+    pdt=1,                          
+    routing=foot_osrm_Lyon)
+  
+  
+  
   
   iso_foot_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
                                        ou=c200_758, # la grille cible

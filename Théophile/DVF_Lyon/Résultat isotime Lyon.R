@@ -89,3 +89,4 @@ tcar_osrm_pop15_isotime_Lyon <- tm_shape(rha.mbr,bbox=bb758)+tm_rgb()+
   tm_shape(riv,bbox=uu758$bbox)+tm_fill("dodgerblue",alpha=1)+
   tm_layout(legend.title.size = 2, legend.text.size = 2)
 graph2svg(tcar_osrm_pop15_isotime_Lyon, file="{DVFdata}/presentation/theophile/car_P15pop/cartes/lyon" %>% glue)
+
