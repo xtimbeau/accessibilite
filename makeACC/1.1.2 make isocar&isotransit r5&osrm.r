@@ -12,86 +12,34 @@ c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
+threads <- 12
+# resolution 50 -------------------
 
-# transit r5 ------------------------------------------
+## transit r5 ----------------------
 tr_r5 <- routing_setup_r5(
   path="{DVFdata}/r5r_data/IDFM" %>% glue, 
   mode=c("WALK", "TRANSIT"),
   time_window=60,
   montecarlo = 100, 
   percentiles = 5L,
-  n_threads = 4)
+  n_threads = threads)
 
-# la petite couronne en résolution 50 parce que c'est comme ça
+# res50
 res <- 50
-walk(c("75", "91", "92", "93"), ~{
-  tr_r5 <- routing_setup_r5(
-    path="{DVFdata}/r5r_data/IDFM" %>% glue, 
-    mode=c("WALK", "TRANSIT"),
-    time_window=60,
-    montecarlo = 100, 
-    percentiles = 5L,
-    n_threads = 2)
-  rr <- iso_accessibilite(
+isotrr550 <- iso_accessibilite(
     quoi=opp,            
-    ou=c200_idf %>% filter(dep==.x),          
+    ou=c200_idf,          
     resolution=res,      
     tmax=90,            
     pdt=5,               
-    routing=tr_r5)
-  save_DVF(rr, "isotr{res}r5d{.x}" %>% glue, rep="rda/iso75")})
+    routing=tr_r5, 
+    dir="{localdata}/trr5{res}" %>% glue)
 
-# la grande couronne 
-walk(c("94"), ~{
-  tr_r5 <- routing_setup_r5(
-    path="{DVFdata}/r5r_data/IDFM" %>% glue, 
-    mode=c("WALK", "TRANSIT"),
-    time_window=60,
-    montecarlo = 100, 
-    percentiles = 5L,
-    n_threads = 4)
-  rr <- iso_accessibilite(
-    quoi=opp,            
-    ou=c200_idf %>% filter(dep==.x),          
-    resolution=res,      
-    tmax=90,            
-    pdt=5,               
-    routing=tr_r5)
-  save_DVF(rr, "isotr{res}r5d{.x}", rep="rda/iso75")})
+save_DVF(isotrr550, rep="rda/isoIDF50/")
 
-isos_tr <- map(depIdf, ~load_DVF("iso75/isotr50r5d{.x}"))
+## transit GPE r5------------------------------------------------------
 
-iso_tr_50_r5 <-list(
-  EMP09 = do.call(raster::merge, map(isos_tr, "EMP09")),
-  P15_POP = do.call(raster::merge, map(isos_tr, "P15_POP")),
-  cste = do.call(raster::merge, map(isos_tr, "cste")))
-
-names(iso_tr_50_r5$EMP09) <- names(isos_tr[[1]]$EMP09)
-names(iso_tr_50_r5$P15_POP) <- names(isos_tr[[1]]$P15_POP)
-names(iso_tr_50_r5$cste) <- names(isos_tr[[1]]$cste)
-save_DVF(iso_tr_50_r5)
-
-ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(25000, 50000, 75000, 100000, 250000, 500000, 1000000, 2000000, 3000000, 4000000))
-save_DVF(ttrr5_emp09)
-
-# transit GPE r5------------------------------------------------------
-
-rr <- iso_accessibilite(
-    quoi=opp, 
-    ou=c200_idf %>% filter(dep%in%c("77", "78", "94" ,"95")),
-    resolution=50, 
-    tmax=90,
-    pdt=5, 
-    routing=trGPE_r5,
-    dir=str_c(localdata, "/GPEr5"))
-save_DVF(rr, "isoGPE50r5d77789495" %>% glue, rep="rda/iso75")
-
-save_DVF(iso_GPE_50_r5, rep="rda/isoIDF")
-
-tGPEr5_emp09 <- iso2time(iso_GPE_200_r5$EMP09, seuils=c(100000,250000,500000,1000000,2000000,3000000,4000000))
-save_DVF(tGPEr5_emp09, rep="rda/iso200")
-
-# résolution 200
+options(java.parameters = "-Xmx16G" )
 trGPE_r5 <- routing_setup_r5(
   path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, 
   mode=c("WALK", "TRANSIT"),
@@ -100,7 +48,63 @@ trGPE_r5 <- routing_setup_r5(
   percentiles = 5L,
   n_threads = 8)
 
-rr200 <- iso_accessibilite(
+rr <- iso_accessibilite(
+    quoi=opp, 
+    ou=c200_idf,
+    resolution=50, 
+    tmax=90,
+    pdt=5, 
+    routing=trGPE_r5,
+    dir=str_c(localdata, "/GPEr550"))
+
+save_DVF(rr, "isoGPE50r5", rep="rda/isoIDF50")
+
+isos_GPE <- map(c("75","91", "92", "93", "77789495"), ~load_DVF("isoIDF50/isoGPE50r5d{.x}"))
+
+iso_GPE_50_r5 <-list(
+  EMP09 = do.call(raster::merge, map(isos_GPE, "EMP09")),
+  P15_POP = do.call(raster::merge, map(isos_GPE, "P15_POP")),
+  cste = do.call(raster::merge, map(isos_GPE, "cste")))
+
+names(iso_GPE_50_r5$EMP09) <- names(isos_GPE[[1]]$EMP09)
+names(iso_GPE_50_r5$P15_POP) <- names(isos_GPE[[1]]$P15_POP)
+names(iso_GPE_50_r5$cste) <- names(isos_GPE[[1]]$cste)
+
+save_DVF(iso_GPE_50_r5, rep="rda/isoIDF50")
+
+tGPEr5_emp09 <- iso2time(iso_GPE_50_r5$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
+save_DVF(tGPEr5_emp09, rep="rda/isoIDF50")
+
+# résolution 200 -----------------
+
+tr_r5 <- routing_setup_r5(
+  path="{DVFdata}/r5r_data/IDFM" %>% glue, 
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 100, 
+  percentiles = 5L,
+  n_threads = 8)
+
+tr_r5_200 <- iso_accessibilite(
+  quoi=opp,            
+  ou=c200_idf,          
+  resolution=200,      
+  tmax=90,            
+  pdt=5,               
+  routing=tr_r5, 
+  dir="{localdata}/trr5200" %>% glue)
+
+save_DVF(tr_r5_200, rep="rda/isoIDF200")
+
+trGPE_r5 <- routing_setup_r5(
+  path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, 
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 100, 
+  percentiles = 5L,
+  n_threads = 8)
+
+gpe_r5_200 <- iso_accessibilite(
   quoi=opp, 
   ou=c200_idf,
   resolution=200, 
@@ -108,7 +112,11 @@ rr200 <- iso_accessibilite(
   pdt=5, 
   routing=trGPE_r5,
   dir=str_c(localdata, "/GPEr5200"))
-save_DVF(rr200, "isoGPE200r5" %>% glue, rep="rda/iso200")
+
+save_DVF(gpe_r5_200, rep="rda/isoIDF200")
+
+tGPEr5_emp09_200 <- iso2time(rr200$EMP09, seuils=c(25000, 50000, 750000, 100000,150000,200000, 250000,500000))
+save_DVF(tGPEr5_emp09_200, rep="rda/iso200")
 
 
 # car OSRM ------------------------------------------------------
