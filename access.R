@@ -39,19 +39,15 @@ options(dplyr.summarise.inform=FALSE)
 rasterOptions(maxmemory=Inf, memfrac=0.9)
 registerDoFuture()
 
-options(java.parameters = "-Xmx48G" )
+options(java.parameters = "-Xmx16G" )
 rJava::.jinit()
 
 # fonctions utilisées
 message("Sources")
 
-source("./fonctions/f.communs.R", encoding="UTF-8")
-source("./fonctions/f.isochrones.R", encoding="UTF-8")
-source("./fonctions/f.optgetmod.r", encoding="UTF-8")
-source("./fonctions/f.map utils.r", encoding="UTF-8")
-source("./fonctions/f.accessibilite.r", encoding="UTF-8")
-source("./fonctions/f.iso2time.r", encoding="UTF-8")
-source("./fonctions/f.geom_massity.r", encoding="UTF-8")
+walk(list.files("./fonctions"),
+     ~source(str_c("./fonctions/", .x), 
+             encoding="UTF-8"))
 
 # # calibri
 # font_import(prompt=FALSE)

@@ -122,7 +122,7 @@ rastervar <-
     nrows <- (ymax-ymin)/resolution
     ncols <- (xmax-xmin)/resolution
     points_m <- matrix(c(data.temp$X+resolution/2, data.temp$Y+resolution/2), ncol=2)
-    sp <- SpatialPoints(points_m, proj4string = crs)
+      sp <- SpatialPoints(points_m, proj4string = crs)
     datasp <- SpatialPointsDataFrame(sp, data.temp %>% select(-idINS, -X, -Y))
     ss <- raster::stack(map(names(datasp), 
               ~rasterize(x=datasp, y=raster(ext, nrow=nrows, ncol=ncols, crs=crs), fun="sum", field=.x)))

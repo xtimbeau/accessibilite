@@ -36,7 +36,7 @@ jeton_sas <- "?sv=2019-12-12&ss=bfqt&srt=sco&sp=rl&se=2020-12-31T18:28:15Z&st=20
 
 # IDFM --------------------------- 
 
-az_r5 <- foreach(i = iter(morceaux), .packages = pckgs44each) %dopar% {
+tr <- foreach(i = iter(morceaux), .packages = pckgs44each) %dopar% {
   DVFdata <- "."
   install.packages("r5r", repos="https://cloud.r-project.org")
   library("rJava")
@@ -63,15 +63,15 @@ az_r5 <- foreach(i = iter(morceaux), .packages = pckgs44each) %dopar% {
 
 stopCluster(cluster)
 
-nn <- names(az_r5[[1]])
+nn <- names(tr[[1]])
 names(nn) <- nn
-iso_tr_r5_50 <- map(nn, function(n) reduce(map(test_az, n), function(r1, r2) merge(r1, r2)))
+iso_tr_r5_50 <- map(nn, function(n) reduce(map(tr, n), function(r1, r2) merge(r1, r2)))
 iso_tr_r5_50_az <- map(iso_tr_r5_50, ~{
-  names(.x) <- names(test_az[[1]]$EMP09)
+  names(.x) <- names(tr[[1]]$EMP09)
   .x})
 ttrr5az_emp09 <- iso2time(iso_tr_r5_50_az$EMP09, seuils=c(25000, 50000, 100000,200000,250000,500000,1000000,2000000,3000000,4000000))
-save_DVF(iso_tr_r5_50_az)
-save_DVF(ttrr5az_emp09)
+save_DVF(iso_tr_r5_50_az, rep="rda/isoIDF50")
+save_DVF(ttrr5az_emp09, rep="rda/isoIDF50")
 
 # GPE ------------------
 

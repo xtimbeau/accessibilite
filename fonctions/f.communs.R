@@ -71,9 +71,15 @@ save_DVF <- function(x, nom = NULL, rep="Rda", local=FALSE, preset="fast") {
   rep_u <- if(local) localdata else str_c(DVFdata,"/",rep)
   dir.create(rep_u, showWarnings = FALSE)
   if (is.null(nom))
+    {
     filename <- "{rep_u}/{n_x}.rda" %>% glue
+    }
   else
+    {
+    env <- parent.frame()
+    nom <- glue(nom, .envir=env) 
     filename <- "{rep_u}/{nom}.rda" %>% glue
+    }
   if("bp"%in%names(x))
     x$mods <- map(x$bp$xgbmod, xgbmload)
   if(is.list(x)) suppressWarnings(x <- rapply(x, readAll, classes=c("RasterBrick", "raster"), how="replace"))
@@ -257,7 +263,7 @@ tabl <- function(data, var)
   data %>% as_tibble() %>% transmute("{{var}}" := {{var}}) %>% table(useNA="ifany")
 }
 
-f2si2<-function (number,rounding=TRUE, digits=1) 
+f2si2<-function (number,rounding=TRUE, digits=1, unit="median") 
 {
   lut <- c(1e-24, 1e-21, 1e-18, 1e-15, 1e-12, 1e-09, 1e-06, 
            0.001, 1, 1000, 1e+06, 1e+09, 1e+12, 1e+15, 1e+18, 1e+21, 
@@ -265,23 +271,45 @@ f2si2<-function (number,rounding=TRUE, digits=1)
   pre <- c("y", "z", "a", "f", "p", "n", "u", "m", "", "k", 
            "M", "G", "T", "P", "E", "Z", "Y")
   ix <- findInterval(number, lut)
-  ixmax <- median(ix, na.rm=TRUE)
+  ix <- switch(unit,
+         median = median(ix, na.rm=TRUE),
+         max = max(ix, na.rm=TRUE),
+         multi = ix)
   if (rounding==TRUE) 
-      sistring <- paste0(round(number/lut[ixmax], digits), pre[ixmax])
+      sistring <- paste0(round(number/lut[ix], digits), pre[ix])
     else  
-      sistring <- paste0(number/lut[ixmax], pre[ixmax])
+      sistring <- paste0(number/lut[ix], pre[ix])
   return(sistring)
 }
 
-uf2si2<-function (number,rounding=TRUE) 
+f2si2df <- function(df, string="", unit="multi")
+{
+  purrr::map(df, ~stringr::str_c(f2si2(.x, unit=unit), string, sep=" "))
+}
+
+if2si2 <- function(text)
+{
+  pre <- c("y", "z", "a", "f", "p", "n", "u", "m", "1", "k", 
+           "M", "G", "T", "P", "E", "Z", "Y")
+  lut <- c(1e-24, 1e-21, 1e-18, 1e-15, 1e-12, 1e-09, 1e-06, 
+           0.001, 1, 1000, 1e+06, 1e+09, 1e+12, 1e+15, 1e+18, 1e+21, 
+           1e+24) 
+  names(lut) <- pre
+  value <- stringr::str_extract(text, "[:digit:]+\\.?[:digit:]*") %>% as.numeric
+  unit <- stringr::str_extract(text, "(?<=[:digit:])[:alpha:]")
+  unit[is.na(unit)] <- "1"
+  value * lut[unit]
+  }
+
+uf2si2<-function (number,rounding=TRUE, unit="median") 
 {
   n_number <- length(number)
   digits <- 1
-  f2 <- f2si2(number, digits=digits)
+  f2 <- f2si2(number, digits=digits, unit=unit)
   while(length(unique(f2))<n_number)
   {
     digits <- digits+1
-    f2 <- f2si2(number, digits=digits)
+    f2 <- f2si2(number, digits=digits, unit=unit)
   }
   f2 
 }

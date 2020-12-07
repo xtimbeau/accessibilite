@@ -16,7 +16,8 @@ iso_accessibilite <- function(
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE, 
   logs = localdata,
-  dir=NULL)                        # ne recalcule pas les groupes déjà calculés, attention !  
+  dir=NULL,
+  table2disk=if(!is.null(dir)) TRUE else FALSE)                        # ne recalcule pas les groupes déjà calculés, attention !  
 {
   start_time <- Sys.time()
   
@@ -31,7 +32,7 @@ iso_accessibilite <- function(
   # 5. cumule
   # 6. rasterize
   
-  dir.create("{logs}/logs" %>% glue, showWarnings = FALSE)
+  dir.create("{logs}/logs" %>% glue, showWarnings = FALSE, recursive=TRUE)
   timestamp <- lubridate::stamp("15-01-20 10h08.05", orders = "dmy HMS", quiet=TRUE) (lubridate::now())
   logfile <- glue("{logs}/logs/iso_accessibilite.{routing$type}.{timestamp}.log")
   log_appender(appender_file(logfile))
@@ -90,8 +91,12 @@ iso_accessibilite <- function(
   log_success("{length(ou_gr)} groupes, {k} subsampling")
   
   pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
-  if(is.null(dir)) 
+  
+  if(table2disk & is.null(dir)) 
+  {
     dir <- tempdir()
+    walk(ou_gr, ~file.remove(str_c(dir,"/", .x,".*")))
+    }
   
   if(!is.null(routing$groupes)) 
     routing <- swap2tmp_routing(routing)
@@ -99,17 +104,17 @@ iso_accessibilite <- function(
   message("...calcul des temps de parcours")
 
   with_progress({
-    pb <- progressor(steps=length(ou_gr))
+    pb <- progressor(steps=sum(groupes$Nous))
     if(routing$future&future)
     {
       plan(plan())
       lt <- log_threshold()
-      access <- furrr::future_map( ou_gr, function(g) {
+      access <- furrr::future_map(ou_gr, function(g) {
         log_threshold(lt)
         log_appender(logger::appender_file(logfile))
-        pb()
+        pb(amount=groupes$Nous[[g]])
         rrouting <- get_routing(routing, g)
-        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir)
+        access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         },.options=furrr::furrr_options(seed=TRUE, 
                                         packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
                                         scheduling = 1))
@@ -117,9 +122,9 @@ iso_accessibilite <- function(
     else
       {
         access <- purrr::map(ou_gr, function(g) {
-          pb()
+          pb(amount=groupes$Nous[[g]])
           rrouting <- get_routing(routing, g)
-          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir)
+          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         })
         }
     access <- rbindlist(access)
@@ -131,7 +136,7 @@ iso_accessibilite <- function(
     gc()
     plan(plan()) # pour reprendre la mémoire
     access <- map(access$file,~{
-      tt <- fread(.x)
+      tt <- qs::qread(.x, nthreads=4)
       tt[, .(fromId, toId, travel_time)]
       setkey(tt, fromId)
       setindex(tt, toId)
@@ -155,6 +160,9 @@ iso_accessibilite <- function(
     }
   else
     {
+      if(table2disk)
+        access <- rbindlist(map(access$file,~qs::qread(.x, nthreads=4)))
+      
       npaires <- sum(access[, .(npaires=npep[[1]]), by=fromId][["npaires"]])
       access[, `:=`(npea=NULL, npep=NULL)]
       
@@ -228,30 +236,48 @@ iso_accessibilite <- function(
 
 # iso_ouetquoi projette sur 4326 les coordonnées et fabrique les grilles nécessaires en donnant en sortie les ou et quoi utilisés pour ttm
 
-iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any", resolution=res_quoi, rf=5)
+iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mean", resolution=res_quoi, rf=5)
 {
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
   {
-    if((!is.finite(res_quoi))) 
+    if(!is.finite(res_quoi)) 
       res_quoi <- resolution
+    
     if("sfc_POINT" %in% class(st_geometry(quoi))) 
-      quoi <- quoi %>% st_buffer(resolution/5)
+    {
+      rf <- 1
+      qxy <- quoi %>%
+        st_transform(3035) %>% 
+        st_coordinates()
+      qins <- idINS3035(qxy, resolution=res_quoi)
+      qag <- quoi %>% 
+        st_drop_geometry() %>% 
+        as.data.frame() %>%
+        as.data.table()
+      qag <- qag[, id:=qins] [, lapply(.SD, sum), by=id, .SDcols=opp_var]
+      qag[, geometry:=idINS2square(qag$id, resolution=res_quoi)]
+      quoi <- st_as_sf(qag) 
+      }
     
     quoi <- quoi %>% st_transform(3035)
+    quoi_surf <- st_area(quoi) %>% as.numeric()
     gc()
     rrr_3035 <- 
       brick(
         map(
           opp_var,
           ~(
-            fasterize(
-              quoi,
+            fasterize::fasterize(
+              quoi %>% mutate(field = get(.x)/quoi_surf),
               raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
-              fun=fun_quoi,
+              fun="sum",
               background=0,
-              field=.x))))
-    rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
+              field="field")*(resolution/rf)^2)))
+    if(rf>1) 
+      rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
+    else
+      rr_3035 <- rrr_3035
     xy_3035 <- raster::coordinates(rr_3035)
     quoi_3035 <- data.table(rr_3035 %>% as.data.frame(),
                             x=xy_3035[,1] %>% round(), 
@@ -280,7 +306,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="any
   quoi_4326[, `:=`(lon = xy_4326[, 1],
                    lat = xy_4326[, 2],
                    x= xy_3035[,1] %>% round(),
-                   y=xy_3035[,2] %>% round())]
+                   y= xy_3035[,2] %>% round())]
   quoi_4326[, id := .I]
   setkey(quoi_4326, id)
   
@@ -368,8 +394,10 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
     out_ou[, `:=`(gr=idINS)]
     ou_gr <- set_names(as.character(unique(out_ou$gr)))
   }
+  Nous <- out_ou[, .N, by=gr]
+  Nous <- set_names(Nous$N, Nous$gr)
   log_success("taille:{f2si2(size)} gr:{f2si2(ngr)} res_gr:{resolution}")
-  list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling)
+  list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling, Nous=Nous)
 }
 
 swap2tmp_routing <- function(routing, qs=TRUE) {
@@ -504,20 +532,20 @@ dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
 is.in.dir <- function(groupe, dir)
 {
   lf <- list.files(dir)
-  str_c(groupe, ".csv")%in%lf
+  str_c(groupe, ".rda")%in%lf
 }
 
-access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir)
+access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir, t2d)
 {
   spid <- get_pid(pids)
   
   s_ou <- ou_4326[gr==groupe, .(id, lon, lat, x, y)]
   log_debug("{spid} aog:{groupe} {k} {nrow(s_ou)}")
   
-  if(ttm_out&&is.in.dir(groupe, dir))
+  if(t2d&&is.in.dir(groupe, dir))
     {
-    log_success("carreau:{groupe} dossier:{dir}")
-    return(data.table(file = str_c(dir, "/", groupe, ".csv")))
+    log_success("{spid} carreau:{groupe} dossier:{dir}")
+    return(data.table(file = str_c(dir, "/", groupe, ".rda")))
   }
 
   if(is.null(routing$ancres))
@@ -558,7 +586,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
 
       if(!is.null(ttm_0$error)) 
       {
-        log_warn("carreau:{groupe} ou_id:{les_ou_s} erreur ttm_0 {ttm_0$error}")
+        log_warn("{spid} carreau:{groupe} ou_id:{les_ou_s} erreur ttm_0 {ttm_0$error}")
         ttm_0 <- data.table()
       }
       else 
@@ -593,8 +621,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
           npea <- sum(paires_fromId$npea)
           npep <- sum(paires_fromId$npep)
           
-          speed_log <-stringr::str_c(spid,
-                            length(pproches),
+          speed_log <-stringr::str_c(length(pproches),
                             " ancres ", f2si2(npea),
                             "@",f2si2(npea/dtime),"p/s demandees, ",
                             f2si2(npep),"@",f2si2(npep/dtime), "p/s retenues")
@@ -617,20 +644,20 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
         else 
         {
           ttm_d <- NULL
-          log_warn("carreau:{groupe} ttm vide") 
+          log_warn("{spid} carreau:{groupe} ttm vide") 
         }
       } # close nrow(ttm_0)>0
       else # nrow(ttm_0)==0
       {
         time <- toc(quiet=TRUE)
-        log_warn("carreau:{groupe} ou_id:{les_ou_s} ttm_0 vide")
+        log_warn("{spid} carreau:{groupe} ou_id:{les_ou_s} ttm_0 vide")
         log_warn("la matrice des distances entre les ancres et les opportunites est vide")
         ttm_d <- NULL
       }
     }
     else  # nrow(ttm_ou)==0
     {
-      log_warn("paquet:{groupe} ou_id:{les_ou_s} ttm_ou vide")
+      log_warn("{spid} carreau:{groupe} ou_id:{les_ou_s} ttm_ou vide")
       log_warn("la matrice des distances interne au carreau est vide")
       ttm_d <- NULL}
   }
@@ -645,10 +672,10 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
     ttm_d <- merge(ttm_d, ttm_d2, by="fromId")
   }
   
-  if(ttm_out)
+  if(t2d)
   {
-    file <- stringr::str_c(dir,"/", groupe, ".csv")
-    data.table::fwrite(ttm_d, file)
+    file <- stringr::str_c(dir,"/", groupe, ".rda")
+    qs::qsave(ttm_d, file, preset="fast", nthreads = 4)
     ttm_d <- data.table::data.table(file=file)
   }
  ttm_d

@@ -1,6 +1,6 @@
 {
   "name": "r5r_E4v3",
-  "vmSize": "Standard_E4a_v4",
+  "vmSize": "Standard_E4_v3",
   "maxTasksPerNode": 1,
   "poolSize": {
     "dedicatedNodes": {

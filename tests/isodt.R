@@ -1,7 +1,5 @@
+# test ---------------------
 source("access.r")
-
-res <- 50
-
 c200 <- load_DVF("c200")
 iris15 <- load_DVF("iris15")
 idf4km <- iris15 %>% filter(UU2010=="00851") %>% st_union() %>% st_buffer(4000)
@@ -10,27 +8,6 @@ c200_idf <- c200 %>% filter(st_within(., idf, sparse=FALSE))
 c200_75 <- c200 %>% filter(dep=="75")
 c200_mtrl <- c200 %>% filter(Depcom=="93048")
 rm(c200)
-
-plan(multisession, workers=8)
-foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
-
-fdt_idf_50 <- iso_accessibilite(
-  quoi = idf4km %>% st_sf() %>% transmute(c=1),
-  ou = c200_idf,
-  resolution=res,
-  routing=foot_osrm,
-  tmax=20,
-  ttm_out = TRUE, 
-  future=TRUE,
-  dir="e:/osrm23112020")
-
-save_DVF(fdt_idf_50, preset="high")
-rm(fdt_idf_50)
-
-# test ---------------------
-source("access.r")
-
-c200 <- load_DVF("c200") 
 iris15 <- load_DVF("iris15")
 idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
 uu851 <- load_DVF("uu851")
@@ -78,7 +55,7 @@ CORINE_idf <- CORINE_fr %>%
   filter(st_intersects(., uu851$iris %>% st_union %>% st_buffer(2000), sparse=FALSE))
 
 korine <- iso_accessibilite(
-  quoi=CORINE_idf %>% transmute(c=1),
+  quoi=CORINE_idf %>% transmute(c=1, s=as.numeric(st_area(CORINE_idf))),
   ou=c200_idf,                       
   resolution=50,                    
   tmax=20,                         
@@ -87,14 +64,16 @@ korine <- iso_accessibilite(
 
 save_DVF(korine, rep="rda/isoIDF")
 korine <- load_DVF("isoIDF/korine")
-torine <- iso2time(korine$c, c(0.5, 1, 5))
-save_DVF(torine, rep="rda/isoIDF")
-mm <- tm_shape(torine$to20)+tm_raster(style="cont", palette=heatrg)
+torine <- iso2time(korine$c, c(0.02, 0.05, 0.1))
+mm <- tm_shape(torine$to50m)+tm_raster(style="cont", palette=heatrg)
 graph2svg(mm, file="test", textratio=3)
 torine_dt <- r2dt(torine, 200)
 torine_dt <- merge(c200_idfdt[, .(idINS200, Ind, dep)], torine_dt, by="idINS200")
 distances <-c("to0.5", "to1", "to5")
 tor_dtm <- torine_dt %>%
   melt(measure.vars=distances, variable.name="seuil", value.name="temps")
-gg <- ggplot(tor_dtm)+geom_massity(aes(x=temps, mass=Ind, y=after_stat(mass), col=dep, fill=dep), position="stack")+scale_y_continuous(labels=uf2si2)+facet_wrap(~seuil)
+gg <- ggplot(tor_dtm[seuil=="to0.5"])+
+  geom_massity(aes(x=temps, mass=Ind, y=after_stat(mass), col=dep, fill=dep), alpha=0.5)+
+  scale_y_continuous(labels=uf2si2)+
+  facet_wrap(~dep)
 graph2svg(gg, file="test2")

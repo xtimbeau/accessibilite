@@ -27,10 +27,10 @@ save_DVF(ttrr5_emp09_200, rep="rda/iso200")
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 uu851 <- load_DVF("uu851")
 m_idf <- uu851$mbfdc+
-  tm_shape(ttrr5_emp09_200$to100k)+
+  tm_shape(ttrr5_emp09$to100k)+
   tm_raster(style="cont", palette=heatrg)+
-  uu851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
-graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 200" %>% glue)
+  uu851$hdc
+graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09" %>% glue)
 m_idf <- uu851$mbfdc+
   tm_shape(ttrr5_emp09_200$to25k)+
   tm_raster(style="cont", palette=heatrg)+
