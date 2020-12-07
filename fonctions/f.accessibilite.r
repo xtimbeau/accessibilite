@@ -116,7 +116,7 @@ iso_accessibilite <- function(
         rrouting <- get_routing(routing, g)
         access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
         },.options=furrr::furrr_options(seed=TRUE, 
-                                        packages=c("data.table", "logger", "osrm", "matrixStats", "rdist", "stringr", "glue"),
+                                        packages=c("data.table", "logger", "stringr", "glue"),
                                         scheduling = 1))
       }
     else
@@ -250,7 +250,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
       qxy <- quoi %>%
         st_transform(3035) %>% 
         st_coordinates()
-      qins <- idINS3035(qxy, resolution=res_quoi)
+      qins <- idINS3035(qxy, resolution=res_quoi, resinst=FALSE)
       qag <- quoi %>% 
         st_drop_geometry() %>% 
         as.data.frame() %>%
@@ -387,7 +387,7 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
     
     subsampling <- min(max(n_t,floor(resolution/(0.1*tmax*vmaxmode(routing$mode)))),8)
     
-    idINS <- idINS3035(ou$x, ou$y, resolution)
+    idINS <- idINS3035(ou$x, ou$y, resolution, resinstr = FALSE)
     uidINS <- unique(idINS)
     
     out_ou <- ou
@@ -514,7 +514,7 @@ get_pid <- function(pids)
 {
   cpid <- future:::session_uuid()[[1]]
   if(cpid%in%pids) 
-    stringr::str_c("[",which(pids==cpid),"] ")
+    stringr::str_c("[",which(pids==cpid),"]")
   else
     ""
 }

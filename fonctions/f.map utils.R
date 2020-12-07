@@ -130,29 +130,39 @@ rastervar <-
     return(ss)
     }
 
-idINS2square <- function(ids, resolution=200)
+idINS2square <- function(ids, resolution=NULL)
 {
+  cr_pos <- str_locate(ids[[1]], "r(?=[0-9])")[,"start"]+1
   cy_pos <- str_locate(ids[[1]], "N(?=[0-9])")[,"start"]+1
   cx_pos <- str_locate(ids[[1]], "E(?=[0-9])")[,"start"]+1
   lcoord <- cx_pos-cy_pos-1
   y <- as.numeric(str_sub(ids,cy_pos,cy_pos+lcoord))
   x <- as.numeric(str_sub(ids,cx_pos,cx_pos+lcoord))
-  pmap(list(x,y), ~st_polygon(
+  r <- if(is.null(resolution))
+    as.numeric(str_sub(ids,cr_pos,cy_pos-cr_pos))
+  else 
+    rep(resolution, length(x))
+  pmap(list(x,y,r), ~st_polygon(
     list(matrix(
-      c(..1, ..1+resolution,..1+resolution,..1, ..1,
-        ..2, ..2, ..2+resolution,..2+resolution,..2),
+      c(..1, ..1+r..3,..1+..3,..1, ..1,
+        ..2, ..2, ..2+..3,..2+..3,..2),
       nrow=5, ncol=2)))) %>%
     st_sfc(crs=3035)
 }
 
-idINS2point <- function(ids, resolution=200)
+idINS2point <- function(ids, resolution=NULL)
 {
+  cr_pos <- str_locate(ids[[1]], "r(?=[0-9])")[,"start"]+1
   cy_pos <- str_locate(ids[[1]], "N(?=[0-9])")[,"start"]+1
   cx_pos <- str_locate(ids[[1]], "E(?=[0-9])")[,"start"]+1
   lcoord <- cx_pos-cy_pos-1
   y <- as.numeric(str_sub(ids,cy_pos,cy_pos+lcoord))
   x <- as.numeric(str_sub(ids,cx_pos,cx_pos+lcoord))
-  m <- matrix(c(x+resolution/2,y+resolution/2), ncol=2)
+  r <- if(is.null(resolution))
+    as.numeric(str_sub(ids,cr_pos,cy_pos-cr_pos))
+  else 
+    rep(resolution, length(x))
+  m <- matrix(c(x+r/2,y+r/2), ncol=2)
   colnames(m) <- c("X", "Y")
   m
 }
@@ -225,23 +235,27 @@ point_on_idINS <- function(sf_point, resolution=200)
   idINS3035(xy[,1], xy[,2])
 }
 
-idINS3035 <- function(x, y=NULL, resolution=200)
+idINS3035 <- function(x, y=NULL, resolution=200, resinstr=TRUE)
 {
   if(is.null(y))
   {
     y <- x[,2]
     x <- x[,1]
-    }
+  }
+  resolution <- round(resolution)
   x <- floor(x / resolution )*resolution
   y <- floor(y / resolution )*resolution
-  resultat <- stringr::str_c("N", y, "E", x)
+  resultat <- if(resinstr)
+    stringr::str_c("r", resolution, "N", y, "E", x)
+  else 
+    stringr::str_c("N", y, "E", x)
   nas <- which(is.na(y)|is.na(x))
   if (length(nas)>0)
     resultat[nas] <- NA
   resultat
 }
 
-raster_ref <- function(sf, resolution) 
+raster_ref <- function(sf, resolution=200) 
 {
   alignres <- max(resolution, 200)
   b <- st_bbox(sf)
@@ -300,14 +314,14 @@ xt_as_extent <- function(sf) {
  
 r2dt <- function(raster, res=NULL, fun=mean)
 {
+  stopifnot(require("raster"))
   base_res <- max(raster::res(raster))
-  vars <- names(raster) 
-  xy <- raster::coordinates(raster)
-  idINS <- idINS3035(xy[,1], xy[,2], resolution=base_res)
-  dt <- raster %>% as.data.frame %>% as.data.table
-  dt <- dt[, `:=`(x=xy[,1], y=xy[,2], idINS=idINS)]
+  vars <- names(raster)
+  dt <- as.data.frame(raster, xy=TRUE, centroids=TRUE)
+  setDT(dt)
   dt <- na.omit(melt(dt, measure.vars=vars), "value")
-  dt <- dcast(dt, x+y+idINS~variable, value.var="value")
+  dt <- dcast(dt, x+y~variable, value.var="value")
+  dt[, idINS := idINS3035(x, y, resolution=base_res)]
   setnames(dt, "idINS",str_c("idINS", base_res))
   navars <- setdiff(vars, names(dt))
   rvars <- setdiff(vars, navars)
@@ -321,6 +335,11 @@ r2dt <- function(raster, res=NULL, fun=mean)
     dt[, (navars):=rep(list(rep(NA, nrow(dt))), length(navars))]
   dt
 }
+
+dt2r <- function(dt, res=NULL) 
+  {
+  
+  }
 
 raster_max <- function(sf1, sf2, resolution=200) {
   b1 <- st_bbox(sf1)

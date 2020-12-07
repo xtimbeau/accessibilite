@@ -12,7 +12,7 @@ c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
-threads <- 12
+threads <- 8
 # resolution 50 -------------------
 
 ## transit r5 ----------------------
