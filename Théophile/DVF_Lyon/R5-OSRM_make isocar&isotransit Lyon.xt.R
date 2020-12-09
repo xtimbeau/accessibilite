@@ -38,9 +38,6 @@
   
   tm_shape(iso_transit_50_r5_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
   
-  
-  
-  
   # moteur OSRM
   # pas de transports en commun
   # rapide pour la voiture, y compris pour des temps longs
@@ -77,9 +74,6 @@
     tmax=20,                        
     pdt=1,                          
     routing=foot_osrm_Lyon)
-  
-  
-  
   
   iso_foot_50_osrm_Lyon <- iso_accessibilite(quoi=iris15_rha, # les variables d'opportunité
                                        ou=c200_758, # la grille cible

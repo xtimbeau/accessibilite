@@ -75,8 +75,29 @@ save_DVF(iso_GPE_50_r5, rep="rda/isoIDF50")
 tGPEr5_emp09 <- iso2time(iso_GPE_50_r5$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(tGPEr5_emp09, rep="rda/isoIDF50")
 
-# résolution 200 -----------------
+## IDFM Greves 2019---------
 
+trGr_r5 <- routing_setup_r5(
+  path="{DVFdata}/r5r_data/IDFMGr" %>% glue, 
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 100, 
+  percentiles = 5L,
+  n_threads = 8)
+
+greve_r5_50 <- iso_accessibilite(
+  quoi=opp, 
+  ou=c200_idf,
+  resolution=50, 
+  tmax=90,
+  pdt=5, 
+  routing=trGr_r5,
+  dir=str_c(localdata, "/grr550"))
+
+save_DVF(greve_r5_50, rep="rda/isoIDF50")
+
+# résolution 200 -----------------
+## IDFM ---------
 tr_r5 <- routing_setup_r5(
   path="{DVFdata}/r5r_data/IDFM" %>% glue, 
   mode=c("WALK", "TRANSIT"),
@@ -95,7 +116,7 @@ tr_r5_200 <- iso_accessibilite(
   dir="{localdata}/trr5200" %>% glue)
 
 save_DVF(tr_r5_200, rep="rda/isoIDF200")
-
+## IDFM GPE ---------
 trGPE_r5 <- routing_setup_r5(
   path="{DVFdata}/r5r_data/IDFMGPE" %>% glue, 
   mode=c("WALK", "TRANSIT"),
@@ -117,7 +138,23 @@ save_DVF(gpe_r5_200, rep="rda/isoIDF200")
 
 tGPEr5_emp09_200 <- iso2time(rr200$EMP09, seuils=c(25000, 50000, 750000, 100000,150000,200000, 250000,500000))
 save_DVF(tGPEr5_emp09_200, rep="rda/iso200")
+## IDFM Greves 2019---------
+trGr_r5 <- routing_setup_r5(
+  path="{DVFdata}/r5r_data/IDFMGr" %>% glue, 
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 100, 
+  percentiles = 5L,
+  n_threads = 8)
 
+greve_r5_200 <- iso_accessibilite(
+  quoi=opp, 
+  ou=c200_idf,
+  resolution=200, 
+  tmax=90,
+  pdt=5, 
+  routing=trGr_r5,
+  dir=str_c(localdata, "/grr5200"))
 
 # car OSRM ------------------------------------------------------
 

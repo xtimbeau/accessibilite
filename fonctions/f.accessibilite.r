@@ -90,8 +90,6 @@ iso_accessibilite <- function(
   log_success("{f2si2(nrow(ou_4326))} ou, {f2si2(nrow(quoi_4326))} quoi")
   log_success("{length(ou_gr)} groupes, {k} subsampling")
   
-  pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
-  
   if(table2disk & is.null(dir)) 
   {
     dir <- tempdir()
@@ -108,6 +106,7 @@ iso_accessibilite <- function(
     if(routing$future&future)
     {
       plan(plan())
+      pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
       lt <- log_threshold()
       access <- furrr::future_map(ou_gr, function(g) {
         log_threshold(lt)
@@ -121,6 +120,7 @@ iso_accessibilite <- function(
       }
     else
       {
+        pids <- future:::session_uuid()[[1]]
         access <- purrr::map(ou_gr, function(g) {
           pb(amount=groupes$Nous[[g]])
           rrouting <- get_routing(routing, g)
