@@ -3,9 +3,15 @@
 # le seuil doit être donc atteint sur les couches (ou cela renverra NA)
 
 
-iso2time_o <- function(isoraster, seuils=median(cellStats(isoraster, median)))
+iso2time_o <- function(isoraster, seuils=median(raster::cellStats(isoraster, median)))
 {
-  assertthat::assert_that(is.raster(isoraster)) 
+  require("checkmate", quietly=TRUE)
+  require("progressr", quietly=TRUE)
+  require("stringr", quietly=TRUE)
+  require("purrr", quietly=TRUE)
+  require("raster", quietly=TRUE)
+  
+  assert(checkClass(isoraster, c("RasterLayer", "RasterBrick", "RatserStack")))
   
   fisoinv <- function(x, isotimes, seuil)
   {
@@ -46,14 +52,20 @@ isorenorme <- function(isoraster, facteur)
   isoraster/facteur
 }
 
-is.raster <- function(x)
+isAraster <- function(x)
 {
   return((class(x)[1]=="RasterLayer" || class(x)[1]=="RasterBrick" || class(x)[1]=="RasterStack"))
 }
 
 iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
 {
-  assertthat::assert_that(is.raster(isoraster)) 
+  require("checkmate", quietly=TRUE)
+  require("progressr", quietly=TRUE)
+  require("stringr", quietly=TRUE)
+  require("purrr", quietly=TRUE)
+  require("raster", quietly=TRUE)
+  
+  assert(checkMultiClass(isoraster, c("RasterLayer", "RasterBrick", "RasterStack")))
   isotimes <- names(isoraster) %>% str_extract("[:digit:]+") %>% as.numeric()
   mm <- isoraster %>% as.matrix
   ncol <- ncol(mm)

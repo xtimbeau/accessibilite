@@ -1,0 +1,281 @@
+# routing engines ---------------------
+
+
+iso_ttm <- function(o, d, tmax, routing)
+{
+  log_debug("iso_ttm:{tmax} {nrow(o)} {nrow(d)}")
+  r <- switch(routing$type,
+              "r5" = r5_ttm(o, d, tmax, routing),
+              "otpv1" = otpv1_ttm(o, d, tmax, routing),
+              "osrm" = osrm_ttm(o, d, tmax, routing),
+              "dt"= dt_ttm(o, d, tmax, routing))
+  log_debug("result:{nrow(r$result)}")
+  r
+}
+
+safe_ttm <- function(routing)
+{
+  switch(routing$type,
+         "r5" = r5_ttm,
+         "otpv1" = otpv1_ttm,         
+         "osrm" = osrm_ttm,
+         "dt"= dt_ttm)
+}
+
+delayRouting <- function(delay, routing)
+{
+  switch(routing$type,
+         "r5" = {
+           res <- routing
+           res$departure_datetime <-
+             as.POSIXct(routing$departure_datetime+delay*60,
+                        format = "%d-%m-%Y %H:%M:%S")
+           res},
+         "otpv1" = {routing}, # à faire
+         "osrm" = {routing}, # pas d'heure de départ
+         "data.table"= {routing}) # à faire
+}
+
+r5_ttm <- function(o, d, tmax, routing)
+{
+  require("r5r", quietly=TRUE)
+  o <- o[, .(id=as.character(id),lon,lat)]
+  d <- d[, .(id=as.character(id),lon,lat)]
+  safe_ttm <- purrr::safely(r5r::travel_time_matrix)
+  
+  res <- safe_ttm(
+    r5r_core = routing$core,
+    origins = o,
+    destinations = d,
+    mode=routing$mode,
+    departure_datetime = routing$departure_datetime,
+    max_walk_dist = routing$max_walk_dist,
+    max_trip_duration = tmax+1,
+    time_window = as.integer(routing$time_window),
+    percentiles = routing$percentile,
+    walk_speed = routing$walk_speed,
+    bike_speed = routing$bike_speed,
+    max_rides = routing$max_rides,
+    n_threads = routing$n_threads,
+    verbose=FALSE)
+  
+  if(!is.null(res$error))
+  {
+    gc()
+    res <- safe_ttm(
+      r5r_core = routing$core,
+      origins = o,
+      destinations = d,
+      mode=routing$mode,
+      departure_datetime = routing$departure_datetime,
+      max_walk_dist = routing$max_walk_dist,
+      max_trip_duration = tmax+1,
+      time_window = as.integer(routing$time_window),
+      percentiles = routing$percentile,
+      walk_speed = routing$walk_speed,
+      bike_speed = routing$bike_speed,
+      max_rides = routing$max_rides,
+      n_threads = routing$n_threads,
+      verbose=FALSE)
+    if(is.null(res$error)) log_warn("second r5::travel_time_matrix ok")
+  }
+  
+  if (is.null(res$error)&&nrow(res$result)>0)
+    res$result[, `:=`(fromId=as.integer(fromId), toId=as.integer(toId), travel_time=as.integer(travel_time))]
+  else
+    log_warn("erreur r5::travel_time_matrix, retourne une matrice vide après 2 essais")
+  res
+}
+
+otpv1_ttm <- function(o, d, tmax, routing)
+{
+  # ca marche pas parce que OTP ne renvoie pas de table
+  # du coup il faudrait faire ça avec les isochrones
+  # ou interroger OTP paire par paire
+  # la solution ici est très très lente et donc pas utilisable
+  
+  o[, `:=`(k=1, fromId=id, fromlon=lon, fromlat=lat)]
+  d[, `:=`(k=1, toId=id, tolon=lon, tolat=lat)]
+  paires <- merge(o,d, by="k", allow.cartesian=TRUE)
+  temps <- furrr::future_map_dbl(1:nrow(paires), ~{
+    x <- paires[.x, ]
+    t <- otpr::otp_get_times(
+      routing$otpcon,  
+      fromPlace= c(x$fromlat, x$fromlon),
+      toPlace= c(x$tolat, x$tolon), 
+      mode= routing$mode,
+      date= routing$date,
+      time= routing$time,
+      maxWalkDistance= routing$maxWalkDistance,
+      walkReluctance = routing$walkReluctance,
+      arriveBy = routing$arriveBy,
+      transferPenalty = routing$transferPenalty,
+      minTransferTime = routing$minTransferTime,
+      detail = FALSE,
+      includeLegs = FALSE)
+    if(t$errorId=="OK") t[["duration"]]
+    else NA
+  })
+  paires[ , .(fromId, toId)] [, temps:=as.integer(temps)]
+}
+
+osrm_ttm <- function(o, d, tmax, routing)
+{
+  require("osrm", quietly=TRUE)
+  options(osrm.server = routing$osrm.server, 
+          osrm.profile = routing$osrm.profile)
+  # safe_table <- safely(osrm::osrmTable)
+  l_o <- o[, .(id, lon, lat)]
+  l_d <- d[, .(id, lon, lat)]
+  # if(routing$future)
+  #   {
+  #   ptable <- future_map(1:nrow(o), function(i) {
+  #     options(osrm.server = routing$osrm.server, 
+  #             osrm.profile = routing$osrm.profile)
+  #     osrm::osrmTable(
+  #       src = l_o[i,],
+  #       dst= l_d,
+  #       exclude=NULL,
+  #       gepaf=FALSE,
+  #       measure="duration")
+  #     },.options=furrr_options(seed=TRUE, 
+  #                              packages=c("data.table", "osrm", "sf", "utils", "RCurl", "jsonlite", "purrr")))
+  #   
+  #   table <- NULL
+  #   table$error <- NULL
+  #   table$result$duration <- do.call(rbind, map(ptable, ~.$duration))
+  #   }
+  # else
+  # {
+  table <- list(
+    result = osrm::osrmTable(
+      src = l_o,
+      dst= l_d,
+      exclude=NULL,
+      gepaf=FALSE,
+      measure="duration"),
+    error =NULL)
+  # }
+  
+  if(is.null(table$error))
+  {
+    dt <- data.table(table$result$duration, keep.rownames = TRUE)
+    dt[, fromId:=rn %>% as.integer] [, rn:=NULL]
+    dt <- melt(dt, id.vars="fromId", variable.name="toId", value.name = "travel_time", variable.factor = FALSE)
+    dt <- dt[travel_time<tmax,]
+    dt[, `:=`(toId = as.integer(toId), travel_time = as.integer(ceiling(travel_time)))]
+    table$result <- dt
+  }
+  table
+}
+
+dt_ttm <- function(o, d, tmax, routing)
+{
+  require("data.table", quietly=TRUE)
+  o_rid <- merge(o[, .(oid=id, x, y)], routing$fromId[, .(rid=id, x, y)], by=c("x", "y"))
+  d_rid <- merge(d[, .(did=id, x, y)], routing$toId[, .(rid=id, x, y)], by=c("x", "y"))
+  ttm <- routing$time_table[(fromId%in%o_rid$rid), ][(toId%in%d_rid$rid),][(travel_time<tmax), ]
+  ttm <- merge(ttm, o_rid[, .(oid, fromId=rid)], by="fromId")
+  ttm <- merge(ttm, d_rid[, .(did, toId=rid)], by="toId")
+  ttm <- ttm[, `:=`(fromId=NULL, toId=NULL)]
+  setnames(ttm,old=c("oid", "did"), new=c("fromId", "toId"))
+  list(
+    error=NULL,
+    result=ttm
+  )
+}
+
+routing_setup_r5 <- function(path,
+                             date="17-12-2019 8:00:00",
+                             mode=c("WALK", "TRANSIT"),
+                             montecarlo=1L,
+                             max_walk_dist= Inf,
+                             time_window=1L,
+                             percentiles=50L,
+                             walk_speed = 5.0,
+                             bike_speed = 12.0,
+                             max_rides= 5L,
+                             n_threads= parallel::detectCores(logical=FALSE))
+{
+  require("r5r", quietly=TRUE)
+  env <- parent.frame()
+  path <- glue::glue(path, .envir = env)
+  mode_string <- stringr::str_c(mode, collapse = "&")
+  r5r::stop_r5()
+  core <- r5r::setup_r5(data_path = path, verbose=FALSE)
+  core$setNumberOfMonteCarloDraws(as.integer(montecarlo))
+  mtnt <- lubridate::now()
+  list(
+    type = "r5",
+    string=glue::glue("r5 routing {mode_string} sur {path} à {mtnt}"),
+    core = core,
+    montecarlo = as.integer(montecarlo),
+    time_window = as.integer(time_window),
+    departure_datetime = as.POSIXct(date, format = "%d-%m-%Y %H:%M:%S", tz=Sys.timezone()),
+    mode=mode,
+    percentiles=percentiles,
+    max_walk_dist = max_walk_dist,
+    walk_speed=walk_speed,
+    bike_speed=bike_speed,
+    max_rides=max_rides,
+    n_threads=as.integer(n_threads),
+    future=FALSE)
+}
+
+getr5datafromAzFS <- function(jeton_sas, path="IDFM", endpoint="https://totostor.file.core.windows.net")
+{
+  require("r5r", quietly=TRUE)
+  require("AzureStor", quietly=TRUE)
+  fl_endp_sas <- AzureStor::storage_endpoint(endpoint, sas=jeton_sas)
+  cont <- AzureStor::storage_container(fl_endp_sas, "timbsmb")
+  AzureStor::storage_multidownload(cont, src= glue::glue("{path}/*.*") , dest=glue::glue("{path}/" , overwrite=TRUE))
+}
+
+routing_setup_otpv1 <- function(
+  router,
+  port=8000,
+  memory="8G",
+  rep=DVFdata,
+  date="12-17-2019 8:00:00",
+  mode=c("WALK", "TRANSIT"),
+  max_walk_dist= 2000,
+  precisionMeters=50)
+  
+{
+  mode_string <- str_c(mode, collapse = "&")
+  list(
+    type = "otpv1",
+    string="otpv1 routing {mode_string} sur {router}(:{port}) à {now()}" %>% glue,
+    otpcon = OTP_server(router=router, port=port, memory = memory, rep=rep),
+    date = unlist(str_split(date, " "))[[1]],
+    time= unlist(str_split(date, " "))[[2]],
+    mode=mode,
+    batch = FALSE,
+    arriveBy = FALSE, 
+    walkReluctance= 2, 
+    maxWalkDistance= max_walk_dist,
+    transferPenalty = 0, 
+    minTransferTime = 0,
+    clampInitialWait= 0,
+    offRoadDistanceMeters=50,
+    precisionMeters=precisionMeters, 
+    future=FALSE)
+}
+
+routing_setup_osrm <- function(
+  server=5000,
+  profile="driving",
+  future=TRUE)
+  
+{
+  list(
+    type = "osrm",
+    string="osrm routing localhost:{server} profile {profile} à {now()}" %>% glue,
+    osrm.server = "http://localhost:{server}/" %>% glue,
+    osrm.profile=profile,
+    future=TRUE,
+    mode=switch(profile,
+                driving="CAR",
+                walk="WALK",
+                bike="BIKE"))
+}

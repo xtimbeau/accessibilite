@@ -5,17 +5,11 @@ message("Packages")
 options("rgdal_show_exportToProj4_warnings"="none")
 
 dvfpackages <- c(
-  "matrixStats", "RhpcBLASctl",
-  "rgdal", "rgeos", "raster", "fasterize", "sf", "geojsonsf",
-  "leaflet", "leaflet.extras", "rdist",
-  "tmap", "tmaptools",  "mapview",
-  "scales", "extrafont", "colorspace",
+  "raster", "sf", "tmap", 
   "patchwork",
-  "r5r", "orsm", "rlist",
-  "glue", "qs", "otpr", "logger",
-  "microbenchmark", "tictoc", "profvis", "progressr", "progress",
-  "Rcpp", "skimr", "future", "foreach", "doFuture", "furrr",
-  "data.table", "lobstr",  "lubridate", "magrittr",  "tidyverse", "vroom", "dtplyr", "rlang")
+  "microbenchmark", "tictoc", "profvis", 
+  "skimr", "furrr", "data.table", "lobstr",
+  "magrittr", "glue", "tidyverse")
 
 pkg <-
   lapply(dvfpackages, function(x)
@@ -30,14 +24,11 @@ dvflib <-
 
 # multicore
 
-blas_set_num_threads(4)
-omp_set_num_threads(4)
 plan(multicore, workers= availableCores()%/%4)
 message("{nbrOfWorkers()} workers" %>% glue)
 
 options(dplyr.summarise.inform=FALSE)
 rasterOptions(maxmemory=Inf, memfrac=0.9)
-registerDoFuture()
 
 options(java.parameters = "-Xmx16G" )
 rJava::.jinit()
