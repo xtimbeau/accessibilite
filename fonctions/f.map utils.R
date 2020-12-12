@@ -8,8 +8,7 @@ rastermap <-
            resolution=50, 
            decor=NULL,
            bbox=NULL, ...) {
-    require("rlang", quietly=TRUE)
-    require("tmap", quietly=TRUE)
+    library("tmap", quietly=TRUE)
     
     quo_var <- rlang::enquo(var)
 
@@ -28,11 +27,8 @@ rastervar <-
            fun=mean, # opérateur d'aggrégation
            dropth = 0, # drop 1% des valeurs extrêmes
            resolution=50, idINS="idINS") {
-    require("rlang", quietly=TRUE)
-    require("purrr", quietly=TRUE)
-    require("dplyr", quietly=TRUE)
-    require("data.table", quietly=TRUE)
-    require("raster", quietly=TRUE)
+    
+    library("data.table", quietly=TRUE)
     
     quo_var <- rlang::enquos(...)
     idinspire <- getINSres(data,resolution=resolution,idINS=idINS)
@@ -41,16 +37,16 @@ rastervar <-
     else
       idinspire <- data[[idinspire]] 
 
-    data.temp <- map_dfc(quo_var, ~{data %>%
-        as_tibble() %>%
-        dplyr::transmute(!!quo_name(.x) := !!.x)})
+    data.temp <- purrr::map_dfc(quo_var, ~{data %>%
+        dplyr::as_tibble() %>%
+        dplyr::transmute(!!rlang::quo_name(.x) := !!.x)})
 
-    setDT(data.temp)
-    vars <- set_names(names(data.temp))
-    isnum <- map_lgl(data.temp, is.numeric)
+    data.table::setDT(data.temp)
+    vars <- data.table::set_names(names(data.temp))
+    isnum <- purrr::map_lgl(data.temp, is.numeric)
     data.temp <- data.temp[, lapply(.SD, factor2num)]
-    obs_na <- map(vars, ~is.na(data.temp[[.x]]))
-    obs_drop <- reduce(obs_na,and)
+    obs_na <- purrr::map(vars, ~is.na(data.temp[[.x]]))
+    obs_drop <- purrr::reduce(obs_na,and)
     
     data.temp <- data.temp[!obs_drop, idINS:=idinspire]
     
@@ -65,39 +61,34 @@ rastervar <-
 
 idINS2square <- function(ids, resolution=NULL)
 {
-  require("stringr", quietly=TRUE)
-  require("sf", quietly=TRUE)
-  
-  cr_pos <- str_locate(ids[[1]], "r(?=[0-9])")[,"start"]+1
-  cy_pos <- str_locate(ids[[1]], "N(?=[0-9])")[,"start"]+1
-  cx_pos <- str_locate(ids[[1]], "E(?=[0-9])")[,"start"]+1
+  cr_pos <- stringr::str_locate(ids[[1]], "r(?=[0-9])")[,"start"]+1
+  cy_pos <- stringr::str_locate(ids[[1]], "N(?=[0-9])")[,"start"]+1
+  cx_pos <- stringr::str_locate(ids[[1]], "E(?=[0-9])")[,"start"]+1
   lcoord <- cx_pos-cy_pos-1
-  y <- as.numeric(str_sub(ids,cy_pos,cy_pos+lcoord))
-  x <- as.numeric(str_sub(ids,cx_pos,cx_pos+lcoord))
+  y <- as.numeric(stringr::str_sub(ids,cy_pos,cy_pos+lcoord))
+  x <- as.numeric(stringr::str_sub(ids,cx_pos,cx_pos+lcoord))
   r <- if(is.null(resolution))
-    as.numeric(str_sub(ids,cr_pos,cy_pos-cr_pos))
+    as.numeric(stringr::str_sub(ids,cr_pos,cy_pos-cr_pos))
   else 
     rep(resolution, length(x))
-  pmap(list(x,y,r), ~st_polygon(
+  purrr::pmap(list(x,y,r), ~sf::st_polygon(
     list(matrix(
       c(..1, ..1+r..3,..1+..3,..1, ..1,
         ..2, ..2, ..2+..3,..2+..3,..2),
       nrow=5, ncol=2)))) %>%
-    st_sfc(crs=3035)
+    sf::st_sfc(crs=3035)
 }
 
 idINS2point <- function(ids, resolution=NULL)
 {
-  require("stringr", quietly=TRUE)
-  
-  cr_pos <- str_locate(ids[[1]], "r(?=[0-9])")[,"start"]+1
-  cy_pos <- str_locate(ids[[1]], "N(?=[0-9])")[,"start"]+1
-  cx_pos <- str_locate(ids[[1]], "E(?=[0-9])")[,"start"]+1
+  cr_pos <- stringr::str_locate(ids[[1]], "r(?=[0-9])")[,"start"]+1
+  cy_pos <- stringr::str_locate(ids[[1]], "N(?=[0-9])")[,"start"]+1
+  cx_pos <- stringr::str_locate(ids[[1]], "E(?=[0-9])")[,"start"]+1
   lcoord <- cx_pos-cy_pos-1
-  y <- as.numeric(str_sub(ids,cy_pos,cy_pos+lcoord))
-  x <- as.numeric(str_sub(ids,cx_pos,cx_pos+lcoord))
+  y <- as.numeric(stringr::str_sub(ids,cy_pos,cy_pos+lcoord))
+  x <- as.numeric(stringr::str_sub(ids,cx_pos,cx_pos+lcoord))
   r <- if(is.null(resolution))
-    as.numeric(str_sub(ids,cr_pos,cy_pos-cr_pos))
+    as.numeric(stringr::str_sub(ids,cr_pos,cy_pos-cr_pos))
   else 
     rep(resolution, length(x))
   m <- matrix(c(x+r/2,y+r/2), ncol=2)
@@ -107,7 +98,6 @@ idINS2point <- function(ids, resolution=NULL)
 
 xt_point2square <- function(x, y=NULL, r=200, center=FALSE)
 {
-  require("sf", quietly=TRUE)
   if(is.null(y))
   {
    if(is.matrix(x))
@@ -116,7 +106,7 @@ xt_point2square <- function(x, y=NULL, r=200, center=FALSE)
      x <- x[,1]
    }
     else 
-      {xy <- st_coordinates(point)
+      {xy <- sf::st_coordinates(point)
       x <- xy[[1]]
       y <- xy[[2]]}
   }
@@ -125,14 +115,12 @@ xt_point2square <- function(x, y=NULL, r=200, center=FALSE)
     x <- x-r/2
     y <- y-r/2
     } 
- st_polygon(list(matrix(c(x, x+r, x+r, x,   x,
+ sf::st_polygon(list(matrix(c(x, x+r, x+r, x,   x,
                           y, y,   y+r, y+r, y),nrow=5, ncol=2)))
 }
 
 points2square <- function(x, y=NULL, r=200, center=FALSE)
 {
-  require("sf", quietly=TRUE)
-  require("purrr", quietly=TRUE)
   if(is.null(y))
   {
     if(is.matrix(x))
@@ -141,7 +129,7 @@ points2square <- function(x, y=NULL, r=200, center=FALSE)
       x <- x[,1]
     }
     else 
-    {xy <- st_coordinates(point)
+    {xy <- sf::st_coordinates(point)
     x <- xy[[1]]
     y <- xy[[2]]}
   }
@@ -150,39 +138,35 @@ points2square <- function(x, y=NULL, r=200, center=FALSE)
     x <- x-r/2
     y <- y-r/2
   } 
-  map2(x,y, ~st_polygon(list(matrix(c(x, x+r, x+r, x,   x,
+  purrr::map2(x,y, ~sf::st_polygon(list(matrix(c(x, x+r, x+r, x,   x,
                                       y, y,   y+r, y+r, y),nrow=5, ncol=2))))
 }
 
 make_idINSPIRE <- function(grid) {
-  require("purrr", quietly=TRUE)
-  require("sf", quietly=TRUE)
-  require("stringr", quietly=TRUE)
   geom <-
-    transpose(map(st_geometry(grid), function(gg) {
-      m = as.matrix(gg)
-      c(round(min(m[, 1])), round(min(m[, 2])))
-    }))
-  str_c("CRS3035RES200m", "N", geom[[2]], "E", geom[[1]])
+    purr::transpose(
+      purrr::map(
+        sf::st_geometry(grid), function(gg) {
+          m = as.matrix(gg)
+          c(round(min(m[, 1])), round(min(m[, 2])))
+          }))
+  stringr::str_c("CRS3035RES200m", "N", geom[[2]], "E", geom[[1]])
 }
 
 point_on_idINS <- function(sf_point, resolution=200)
 {
-  require("sf", quietly=TRUE)
-  
-  if (!("sfc_POINT"%in%class(st_geometry(sf_point))))
+  if (!("sfc_POINT"%in%class(sf::st_geometry(sf_point))))
   {
-    sf_point <- st_centroid(sf_point)
+    sf_point <- sf::st_centroid(sf_point)
   }
-  if (st_crs(sf_point)$epsg!=3035) 
-    sf_point <- st_transform(sf_point, 3035)
-  xy <- st_coordinates(sf_point)
+  if (sf::st_crs(sf_point)$epsg!=3035) 
+    sf_point <- sf::st_transform(sf_point, 3035)
+  xy <- sf::st_coordinates(sf_point)
   idINS3035(xy[,1], xy[,2], resolution)
 }
 
 idINS3035 <- function(x, y=NULL, resolution=200, resinstr=TRUE)
 {
-  require("stringr", quietly=TRUE)
   if(is.null(y))
   {
     y <- x[,2]
@@ -203,14 +187,11 @@ idINS3035 <- function(x, y=NULL, resolution=200, resinstr=TRUE)
 
 raster_ref <- function(data, resolution=200, crs=3035) 
 {
-  require("sf", quietly=TRUE)
-  require("raster", quietly=TRUE)
-  require("rgdal", quietly=TRUE)
   alignres <- max(resolution, 200)
   if("sf"%in%class(data))
   {
-    b <- st_bbox(data)
-    crs <- st_crs(data)$proj4string
+    b <- sf::st_bbox(data)
+    crs <- sf::st_crs(data)$proj4string
     }
   else
   {
@@ -219,59 +200,56 @@ raster_ref <- function(data, resolution=200, crs=3035)
               xmax=max(data$x, na.rm=TRUE),
               ymin=min(data$y, na.rm=TRUE), 
               ymax=max(data$y, na.rm=TRUE))
-    crs <- CRS("EPSG:{crs}" %>% glue)
+    crs <- rgdal::CRS(SRS_string="EPSG:{crs}" %>% glue::glue)
   }
-  ext <- extent(floor(b$xmin / alignres )*alignres,
+  ext <- sf::extent(floor(b$xmin / alignres )*alignres,
                 ceiling(b$xmax/alignres)*alignres,
                 floor(b$ymin/alignres)*alignres,
                 ceiling(b$ymax/alignres)*alignres)
-  raster(ext, crs=crs,  resolution=resolution)
+  raster::raster(ext, crs=crs,  resolution=resolution)
 }
 
 
 croppedRaster <- function(x, na.value = NA)
 {
-  require("raster", quietly=TRUE)
-  
   if(!is.na(na.value))
   {
     x[x == na.value] <- NA
   }
-  if(canProcessInMemory(x, n = 2))
+  if(raster::canProcessInMemory(x, n = 2))
   {
     x.matrix <- is.na(as.matrix(x))
     colNotNA <- which(colSums(x.matrix) != nrow(x))
     rowNotNA <- which(rowSums(x.matrix) != ncol(x))
     
-    croppedExtent <- extent(x, 
+    croppedExtent <- raster::extent(x, 
                             r1 = rowNotNA[1],
                             r2 = rowNotNA[length(rowNotNA)],
                             c1 = colNotNA[1], 
                             c2 = colNotNA[length(colNotNA)])
     
-    crop(x, croppedExtent)
+    raster::crop(x, croppedExtent)
   } else
   {
     xNA <- is.na(x)
     colNotNA <- which(colSums(xNA) != nrow(x))
     rowNotNA <- which(rowSums(xNA) != ncol(x))
     
-    croppedExtent <- extent(x, 
+    croppedExtent <- raster::extent(x, 
                             r1 = rowNotNA[1], 
                             r2 = rowNotNA[length(rowNotNA)],
                             c1 = colNotNA[1], 
                             c2 = colNotNA[length(colNotNA)])
     
-    crop(x, croppedExtent)
+    raster::crop(x, croppedExtent)
   }
 }
 
 # renvoie l'extent (pour raster) d'un sf
 
 xt_as_extent <- function(sf) {
-  require("sf", quietly=TRUE)
-  b <- st_bbox(sf)
-  extent(b$xmin, 
+  b <- sf::st_bbox(sf)
+  sf::extent(b$xmin, 
          b$xmax,
          b$ymin, 
          b$ymax)
@@ -279,24 +257,21 @@ xt_as_extent <- function(sf) {
  
 r2dt <- function(raster, resolution=NULL, fun=mean)
 {
-  require("raster", quietly=TRUE)
-  require("data.table", quietly=TRUE)
-  require("stringr", quietly=TRUE)
-  
+  library(data.table, quietly = TRUE)
   base_res <- max(raster::res(raster))
   vars <- names(raster)
   dt <- as.data.frame(raster, xy=TRUE, centroids=TRUE)
-  setDT(dt)
-  dt <- na.omit(melt(dt, measure.vars=vars), "value")
-  dt <- dcast(dt, x+y~variable, value.var="value")
+  data.table::setDT(dt)
+  dt <- data.table::na.omit(data.table::melt(dt, measure.vars=vars), "value")
+  dt <- data.table::dcast(dt, x+y~variable, value.var="value")
   dt[, idINS := idINS3035(x, y, resolution=base_res)]
-  setnames(dt, "idINS",str_c("idINS", base_res))
+  data.table::setnames(dt, "idINS",str_c("idINS", base_res))
   navars <- setdiff(vars, names(dt))
   rvars <- setdiff(vars, navars)
   if(!is.null(resolution))
   {
-    id <- str_c("idINS",resolution)
-    dt[, (str_c("idINS",resolution)):=idINS3035(x,y,resolution)]
+    id <- stringr::str_c("idINS",resolution)
+    dt[, (stringr::str_c("idINS",resolution)):=idINS3035(x,y,resolution)]
     dt <- dt[, lapply(.SD, function(x) fun(x, na.rm=TRUE)), by=c(id), .SDcols=rvars]
   }
   if (length(navars)>0)
@@ -305,11 +280,9 @@ r2dt <- function(raster, resolution=NULL, fun=mean)
 }
 
 getresINS <- function(dt, idINS="idINS") {
-  require("purrr", quietly=TRUE)
-  require("stringr", quietly=TRUE)
-  map(names(dt) %>% keep(~str_detect(.x,idINS)), 
+  purrr::map(names(dt) %>% purrr::keep(~stringr::str_detect(.x,idINS)), 
       ~{
-        r<-str_extract(dt[[.x]], "(?<=r)[0-9]+") %>%
+        r<-stringr::str_extract(dt[[.x]], "(?<=r)[0-9]+") %>%
           as.numeric()
         ur <- unique(r)
         if (length(ur)==0)
@@ -320,12 +293,11 @@ getresINS <- function(dt, idINS="idINS") {
 }
 
 getINSres <- function(dt, resolution, idINS="idINS") {
-  require("purrr", quietly=TRUE)
   rr <- getresINS(dt, idINS)
   ncol <- names(dt)
   if(length(rr)==0)
     return(FALSE)
-  isresin <- map_lgl(rr, ~.x[["res"]]==resolution)
+  isresin <- purrr::map_lgl(rr, ~.x[["res"]]==resolution)
   if(any(isresin))
     return(rr[which(isresin)][[1]]$idINS)
   else 
@@ -334,9 +306,7 @@ getINSres <- function(dt, resolution, idINS="idINS") {
 
 dt2r <- function(dt, resolution=NULL, idINS="idINS") 
   {
-  require("data.table", quietly=TRUE)
-  require("raster", quietly=TRUE)
-  require("purrr", quietly=TRUE)
+  library(data.table, quietly = TRUE)
   rr <- getresINS(dt, idINS)
   ncol <- names(dt)
   if(length(rr)==0)
@@ -344,7 +314,7 @@ dt2r <- function(dt, resolution=NULL, idINS="idINS")
   else
   {
     if(!is.null(resolution))
-      isresin <- map_lgl(rr, ~.x[["res"]]==resolution)
+      isresin <- purrr::map_lgl(rr, ~.x[["res"]]==resolution)
     else
       isresin <- c(TRUE, rep(FALSE, length(rr)-1))
     if(any(isresin))
@@ -367,10 +337,10 @@ dt2r <- function(dt, resolution=NULL, idINS="idINS")
   xy <- idINS2point(dt$idINS, resolution = res)
   dt[, `:=`(x=xy[,1], y=xy[,2])]
   rref <- raster_ref(dt, resolution = res, crs=3035)
-  cells <- cellFromXY(rref, xy)
-  layers <- keep(ncol, ~(is.numeric(dt[[.x]]))&(!.x%in%c("x","y")))
-  brickette <- brick(
-    map(layers,
+  cells <- raster::cellFromXY(rref, xy)
+  layers <- purrr::keep(ncol, ~(is.numeric(dt[[.x]]))&(!.x%in%c("x","y")))
+  brickette <- raster::brick(
+    purrr::map(layers,
       ~{
         r <- raster(rref)
         r[cells] <- dt[[.x]]
@@ -381,23 +351,21 @@ dt2r <- function(dt, resolution=NULL, idINS="idINS")
   }
 
 raster_max <- function(sf1, sf2, resolution=200) {
-  require("sf", quietly=TRUE)
-  b1 <- st_bbox(sf1)
-  b2 <- st_bbox(sf2 %>% st_transform(st_crs(sf1)))
-  bb <- st_bbox(c(xmin = min(b1$xmin, b2$xmin),
+  library("sf", quietly=TRUE)
+  b1 <- sf::st_bbox(sf1)
+  b2 <- sf::st_bbox(sf2 %>% sf::st_transform(st_crs(sf1)))
+  bb <- sf::st_bbox(c(xmin = min(b1$xmin, b2$xmin),
                   xmax = max(b1$xmax, b2$xmax),
                   ymax = max(b1$ymax, b2$ymax),
                   ymin = min(b1$ymin, b2$ymin)),
-                crs = st_crs(sf1))
+                crs = sf::st_crs(sf1))
   raster_ref(bb, resolution=resolution)}
 
 projectrgb <- function(rgb, crs="3035")
 {
-  require("raster", quietly=TRUE)
-  require("glue", quietly=TRUE)
-  maxs <- cellStats(rgb, max)
-  rgbp <- projectRaster(from=rgb, crs=CRS("EPSG:{crs}" %>% glue)) # la projection fait un truc bizarre sur les entiers
-  rgbp <- rgbp/cellStats(rgbp, max)*maxs %>%
+  maxs <- raster::cellStats(rgb, max)
+  rgbp <- raster::projectRaster(from=rgb, crs=CRS("EPSG:{crs}" %>% glue::glue)) # la projection fait un truc bizarre sur les entiers
+  rgbp <- rgbp/raster::cellStats(rgbp, max)*maxs %>%
     round() # on remet tout comme avant mais en 3035
   rgbp
 }

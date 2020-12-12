@@ -117,7 +117,7 @@ otp_isochrone <- function(lon, lat,                         # en coordonnées lo
 aggr_isochrone_DT <- function (positions, param, grid,
                                progress=FALSE, n_split=1, todisk=0, timing=FALSE, return="DT", inrep=tempdir(), pbar=NULL, ...)
   {
-  require(data.table, quietly=TRUE, warn.conflicts=FALSE)
+  library(data.table, quietly=TRUE, warn.conflicts=FALSE)
   if (timing) tic()
   # if(progress) pb <- progress_bar$new(total = nrow(positions))
   if(is.null(pbar)) pbar <- progressor(nrow(positions))
@@ -277,7 +277,7 @@ future_aggr_isochrone_DT <- function (positions, param, grid,
                                       todisk=FALSE, inrep=tempdir(), timing=TRUE,
                                       otpserver=NULL)
 {
-  require(data.table, quietly=TRUE, warn.conflicts = FALSE)
+  library(data.table, quietly=TRUE, warn.conflicts = FALSE)
   if (timing) tic()
   in_plan <- plan()
   rasterOptions(maxmemory=Inf, memfrac=0.75)
@@ -516,9 +516,9 @@ kernel_polychronique <- function (on_pos, sfdata, var, minutes=c(5,10,15), poids
   nrows <- (ymax-ymin)/(resolution/res_fac)
   ncols <- (xmax-xmin)/(resolution/res_fac)
   points_m <- matrix(c(sfdata.temp$X+resolution/2, sfdata.temp$Y+resolution/2), ncol=2)
-  sp <- SpatialPoints(points_m, proj4string = CRS(pstring))
+  sp <- SpatialPoints(points_m, proj4string = rgdal::CRS(uprojargs=pstring))
   datasp <- SpatialPointsDataFrame(sp, sfdata.temp)
-  rrr <- raster(nrows=nrows, ncols=ncols, ext=ext, crs=sp::CRS(pstring) , resolution=resolution/res_fac)
+  rrr <- raster(nrows=nrows, ncols=ncols, ext=ext, crs=rgdal::CRS(uprojargs=pstring) , resolution=resolution/res_fac)
   rastered_var <- rasterize(x=datasp, y=rrr, fun="sum", field="summary")
   names(minutes) <- str_c("iso", minutes, "m")
   minutes <- minutes[sort(names(minutes))]

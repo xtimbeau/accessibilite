@@ -18,6 +18,10 @@ pkg <-
 
 dvfpackages <- intersect(dvfpackages, installed.packages())
 
+# rend silencieux library
+flibrary <- library
+library <- function(...) suppressPackageStartupMessages(flibrary(...))
+
 dvflib <-
   lapply(dvfpackages, function(x)
     library(x, quietly = TRUE, character.only = TRUE))

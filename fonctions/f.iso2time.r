@@ -5,11 +5,11 @@
 
 iso2time_o <- function(isoraster, seuils=median(raster::cellStats(isoraster, median)))
 {
-  require("checkmate", quietly=TRUE)
-  require("progressr", quietly=TRUE)
-  require("stringr", quietly=TRUE)
-  require("purrr", quietly=TRUE)
-  require("raster", quietly=TRUE)
+  library("checkmate", quietly=TRUE)
+  library("progressr", quietly=TRUE)
+  library("stringr", quietly=TRUE)
+  library("purrr", quietly=TRUE)
+  library("raster", quietly=TRUE)
   
   assert(checkClass(isoraster, c("RasterLayer", "RasterBrick", "RatserStack")))
   
@@ -59,11 +59,11 @@ isAraster <- function(x)
 
 iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
 {
-  require("checkmate", quietly=TRUE)
-  require("progressr", quietly=TRUE)
-  require("stringr", quietly=TRUE)
-  require("purrr", quietly=TRUE)
-  require("raster", quietly=TRUE)
+  library("checkmate", quietly=TRUE)
+  library("progressr", quietly=TRUE)
+  library("stringr", quietly=TRUE)
+  library("purrr", quietly=TRUE)
+  library("raster", quietly=TRUE)
   
   assert(checkMultiClass(isoraster, c("RasterLayer", "RasterBrick", "RasterStack")))
   isotimes <- names(isoraster) %>% str_extract("[:digit:]+") %>% as.numeric()

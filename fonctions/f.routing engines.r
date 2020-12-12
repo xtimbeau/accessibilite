@@ -38,7 +38,7 @@ delayRouting <- function(delay, routing)
 
 r5_ttm <- function(o, d, tmax, routing)
 {
-  require("r5r", quietly=TRUE)
+  library("r5r", quietly=TRUE)
   o <- o[, .(id=as.character(id),lon,lat)]
   d <- d[, .(id=as.character(id),lon,lat)]
   safe_ttm <- purrr::safely(r5r::travel_time_matrix)
@@ -121,7 +121,7 @@ otpv1_ttm <- function(o, d, tmax, routing)
 
 osrm_ttm <- function(o, d, tmax, routing)
 {
-  require("osrm", quietly=TRUE)
+  library("osrm", quietly=TRUE)
   options(osrm.server = routing$osrm.server, 
           osrm.profile = routing$osrm.profile)
   # safe_table <- safely(osrm::osrmTable)
@@ -171,7 +171,7 @@ osrm_ttm <- function(o, d, tmax, routing)
 
 dt_ttm <- function(o, d, tmax, routing)
 {
-  require("data.table", quietly=TRUE)
+  library("data.table", quietly=TRUE)
   o_rid <- merge(o[, .(oid=id, x, y)], routing$fromId[, .(rid=id, x, y)], by=c("x", "y"))
   d_rid <- merge(d[, .(did=id, x, y)], routing$toId[, .(rid=id, x, y)], by=c("x", "y"))
   ttm <- routing$time_table[(fromId%in%o_rid$rid), ][(toId%in%d_rid$rid),][(travel_time<tmax), ]
@@ -197,7 +197,7 @@ routing_setup_r5 <- function(path,
                              max_rides= 5L,
                              n_threads= parallel::detectCores(logical=FALSE))
 {
-  require("r5r", quietly=TRUE)
+  library("r5r", quietly=TRUE)
   env <- parent.frame()
   path <- glue::glue(path, .envir = env)
   mode_string <- stringr::str_c(mode, collapse = "&")
@@ -224,8 +224,8 @@ routing_setup_r5 <- function(path,
 
 getr5datafromAzFS <- function(jeton_sas, path="IDFM", endpoint="https://totostor.file.core.windows.net")
 {
-  require("r5r", quietly=TRUE)
-  require("AzureStor", quietly=TRUE)
+  library("r5r", quietly=TRUE)
+  library("AzureStor", quietly=TRUE)
   fl_endp_sas <- AzureStor::storage_endpoint(endpoint, sas=jeton_sas)
   cont <- AzureStor::storage_container(fl_endp_sas, "timbsmb")
   AzureStor::storage_multidownload(cont, src= glue::glue("{path}/*.*") , dest=glue::glue("{path}/" , overwrite=TRUE))

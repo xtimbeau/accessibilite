@@ -2,9 +2,9 @@
 
 disichrone <- function(data, dist, mass=Ind, by="", n=512, bw="nrd0", adjust=1)
   {
-  require("rlang", quietly=TRUE)
-  require("dplyr", quietly=TRUE)
-  require("purrr", quietly=TRUE)
+  library("rlang", quietly=TRUE)
+  library("dplyr", quietly=TRUE)
+  library("purrr", quietly=TRUE)
 
   qdist <- rlang::enquo(dist)
   ndist <- rlang::quo_name(qdist)

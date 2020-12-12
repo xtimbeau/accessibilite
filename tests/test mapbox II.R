@@ -13,7 +13,7 @@ st_crs(rhaplus) <- st_crs("+proj=longlat +ellps=WGS84")
 rha.mbr <- cc_location(loc=rhaplus, zoom = 9,
                        base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
 maxs <- cellStats(rha.mbr, max)
-rha.mbr <- projectRaster(from=rha.mbr, crs=CRS("EPSG:3035"))
+rha.mbr <- projectRaster(from=rha.mbr, crs=CRS(SRS_string="EPSG:3035"))
 rha.mbr <- rha.mbr/cellStats(rha.mbr, max)*maxs %>% as.integer
 # Mise à l'échelle du fond de carte
 

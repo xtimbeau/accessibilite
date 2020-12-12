@@ -19,19 +19,19 @@ iso_accessibilite <- function(
   dir=NULL,
   table2disk=if(!is.null(dir)) TRUE else FALSE)                        # ne recalcule pas les groupes déjà calculés, attention !  
 {
-  require("logger", quietly=TRUE)
-  require("data.table", quietly=TRUE)
-  require("progressr", quietly=TRUE)
-  require("qs", quietly=TRUE)
-  require("purrr", quietly=TRUE)
-  require("furrr", quietly=TRUE)
-  require("future", quietly=TRUE)
-  require("magrittr", quietly=TRUE)
-  require("dplyr", quietly=TRUE)
-  require("glue", quietly=TRUE)
-  require("stringr", quietly=TRUE)
-  require("raster", quietly=TRUE)
-  require("sf", quietly=TRUE)
+  library("logger", quietly=TRUE)
+  library("data.table", quietly=TRUE)
+  library("progressr", quietly=TRUE)
+  library("qs", quietly=TRUE)
+  library("purrr", quietly=TRUE)
+  library("furrr", quietly=TRUE)
+  library("future", quietly=TRUE)
+  library("magrittr", quietly=TRUE)
+  library("dplyr", quietly=TRUE)
+  library("glue", quietly=TRUE)
+  library("stringr", quietly=TRUE)
+  library("raster", quietly=TRUE)
+  library("sf", quietly=TRUE)
   
   start_time <- Sys.time()
   
@@ -214,24 +214,15 @@ iso_accessibilite <- function(
         sf = access_c %>% as_tibble() %>% st_as_sf(coords=c("x","y"), crs=3035),
         raster = {
           message("...rastérization")
-          xxyy <- access_c[, .(x=x[[1]], y=y[[1]]), by=fromId]
-          sqs <- st_as_sf(xxyy, coords=c("x", "y"), crs=3035) %>% st_buffer(outr/2)
-          if (!is.null(ou))
-            r <- raster_ref(ou %>% st_transform(3035), outr)
-          else
-            r <- raster_ref(quoi %>% st_transform(3035), outr)
           ttn <- str_c("iso",tt, "m")
+          ids <- idINS3035(ou_4326$x, ou_4326$y, resolution = outr)
+          ids <- data.table(fromId=ou_4326$id, idINS200=ids)
           map(opp_var, function(v) {
             r_xy <- dcast(access_c, fromId~temps, value.var=v)
             names(r_xy) <- c("fromId", ttn)
-            r_xy[, geometry:=sqs$geometry]
-            r_xy <- r_xy %>% as.data.frame() %>% st_as_sf()
-            brick(
-              map(ttn, ~{
-                rz <- fasterize::fasterize(r_xy, r, field=.x)
-                names(rz) <- .x
-                rz}))})
-          })
+            r_xy <- merge(r_xy, ids, by="fromId")[, fromId:=NULL]
+            dt2r(r_xy, resolution=outr)
+          })})
       dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
       red <- 100*(npaires_brut-npaires)/npaires_brut
       tmn <- second2str(dtime)
@@ -254,8 +245,8 @@ iso_accessibilite <- function(
 
 iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mean", resolution=res_quoi, rf=5)
 {
-  require("fasterize", quietly=TRUE)
-  require("sf", quietly=TRUE)
+  library("fasterize", quietly=TRUE)
+  library("sf", quietly=TRUE)
   
   # projection éventuelle sur une grille 3035 à la résolution res_quoi ou resolution
   if (!("sfc_POINT" %in% class(st_geometry(quoi)))|is.finite(res_quoi))
@@ -379,7 +370,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
 
 iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60) 
 {
-  require("matrixStats", quietly=TRUE)
+  library("matrixStats", quietly=TRUE)
   
   n <- min(100, nrow(ou))
   mou <- ou[sample(.N, n), .(x,y)] %>% as.matrix
@@ -422,9 +413,9 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
 }
 
 swap2tmp_routing <- function(routing, qs=TRUE) {
-  require("qs", quietly=TRUE)
-  require("data.table", quietly=TRUE)
-  require("purrr", quietly=TRUE)
+  library("qs", quietly=TRUE)
+  library("data.table", quietly=TRUE)
+  library("purrr", quietly=TRUE)
   if(is.null(routing$groupes))
     return(routing)
   if(!is.null(routing$tempdir))
@@ -447,9 +438,9 @@ swap2tmp_routing <- function(routing, qs=TRUE) {
   }
 
 get_routing <- function(routing, groupe) {
-  require("stringr", quietly=TRUE)
-  require("data.table", quietly=TRUE)
-  require("qs", quietly=TRUE)
+  library("stringr", quietly=TRUE)
+  library("data.table", quietly=TRUE)
+  library("qs", quietly=TRUE)
   if(is.null(routing$groupes))
     return(routing)
   ext <- str_extract(routing$time_table, "(?<=\\.)[:alnum:]*(?!\\.)")
@@ -539,8 +530,8 @@ ttm_on_closest <- function(ppou, s_ou, quoi, ttm_0, les_ou, tmax, routing, grdeo
 
 get_pid <- function(pids)
 {
-  require("future", quietly=TRUE)
-  require("stringr", quietly=TRUE)
+  library("future", quietly=TRUE)
+  library("stringr", quietly=TRUE)
   
   cpid <- future:::session_uuid()[[1]]
   if(cpid%in%pids) 
@@ -551,8 +542,8 @@ get_pid <- function(pids)
 
 dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
 {
-  require("purrr", quietly=TRUE)
-  require("data.table", quietly=TRUE)
+  library("purrr", quietly=TRUE)
+  library("data.table", quietly=TRUE)
   ttm <- iso_ttm(o=ou, d=quoi, tmax=tmax+1, routing=routing)$result
   ttm_d1 <- merge(ttm, quoi, by.x="toId", by.y="id", all.x=TRUE)
   ttm_d <- ttm_d1[, map(.SD,~sum(., na.rm=TRUE)),
@@ -563,18 +554,18 @@ dt_access_on_groupe <- function(groupe, ou, quoi, routing, tmax, opp_var)
 
 is.in.dir <- function(groupe, dir)
 {
-  require("stringr", quietly=TRUE)
+  library("stringr", quietly=TRUE)
   lf <- list.files(dir)
   str_c(groupe, ".rda")%in%lf
 }
 
 access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_var, ttm_out, pids, dir, t2d)
 {
-  require("data.table", quietly=TRUE)
-  require("tictoc", quietly=TRUE)
-  require("purrr", quietly=TRUE)
-  require("stringr", quietly=TRUE)
-  require("qs", quietly=TRUE)
+  library("data.table", quietly=TRUE)
+  library("tictoc", quietly=TRUE)
+  library("purrr", quietly=TRUE)
+  library("stringr", quietly=TRUE)
+  library("qs", quietly=TRUE)
   
   spid <- get_pid(pids)
   
@@ -722,8 +713,8 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
 
 minimax_euclid <- function(from, to, dist)
 {
-  require("matrixStats", quietly=TRUE)
-  require("rdist", quietly=TRUE)
+  library("matrixStats", quietly=TRUE)
+  library("rdist", quietly=TRUE)
   m_from <- from[, .(x,y)] %>% as.matrix()
   m_to <- to[, .(x,y)] %>% as.matrix()
   dfrom2to <- rdist::cdist(m_from, m_to)
@@ -745,12 +736,12 @@ r5_isochrone <- function(lon, lat,                         # en coordonnées lon
                          plot=FALSE,
                          nthreads=parallel::detectCores(logical=FALSE))
 {
-  require("tictoc", quietly=TRUE)
-  require("assertthat", quietly=TRUE)
-  require("r5r", quietly=TRUE)
-  require("fasterize", quietly=TRUE)
-  require("raster", quietly=TRUE)
-  require("sf", quietly=TRUE)
+  library("tictoc", quietly=TRUE)
+  library("assertthat", quietly=TRUE)
+  library("r5r", quietly=TRUE)
+  library("fasterize", quietly=TRUE)
+  library("raster", quietly=TRUE)
+  library("sf", quietly=TRUE)
   
   tic()
 
