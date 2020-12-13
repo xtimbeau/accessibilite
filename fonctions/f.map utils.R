@@ -200,9 +200,9 @@ raster_ref <- function(data, resolution=200, crs=3035)
               xmax=max(data$x, na.rm=TRUE),
               ymin=min(data$y, na.rm=TRUE), 
               ymax=max(data$y, na.rm=TRUE))
-    crs <- rgdal::CRS(SRS_string="EPSG:{crs}" %>% glue::glue)
+    crs <- sp::CRS(SRS_string=glue::glue("EPSG:{crs}"))
   }
-  ext <- sf::extent(floor(b$xmin / alignres )*alignres,
+  ext <- raster::extent(floor(b$xmin / alignres )*alignres,
                 ceiling(b$xmax/alignres)*alignres,
                 floor(b$ymin/alignres)*alignres,
                 ceiling(b$ymax/alignres)*alignres)
@@ -280,16 +280,17 @@ r2dt <- function(raster, resolution=NULL, fun=mean)
 }
 
 getresINS <- function(dt, idINS="idINS") {
-  purrr::map(names(dt) %>% purrr::keep(~stringr::str_detect(.x,idINS)), 
-      ~{
-        r<-stringr::str_extract(dt[[.x]], "(?<=r)[0-9]+") %>%
-          as.numeric()
-        ur <- unique(r)
-        if (length(ur)==0)
-          list(idINS=.x, res=NA_integer_)
-        else
-          list(idINS=.x, res=ur)
-        })
+  purrr::map(
+    purrr::keep(names(dt), ~stringr::str_detect(.x,idINS)),
+    ~{
+      r<-stringr::str_extract(dt[[.x]], "(?<=r)[0-9]+") %>%
+        as.numeric()
+      ur <- unique(r)
+      if (length(ur)==0)
+        list(idINS=.x, res=NA_integer_)
+      else
+        list(idINS=.x, res=ur)
+    })
 }
 
 getINSres <- function(dt, resolution, idINS="idINS") {

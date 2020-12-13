@@ -21,17 +21,7 @@ iso_accessibilite <- function(
 {
   library("logger", quietly=TRUE)
   library("data.table", quietly=TRUE)
-  library("progressr", quietly=TRUE)
-  library("qs", quietly=TRUE)
-  library("purrr", quietly=TRUE)
-  library("furrr", quietly=TRUE)
-  library("future", quietly=TRUE)
   library("magrittr", quietly=TRUE)
-  library("dplyr", quietly=TRUE)
-  library("glue", quietly=TRUE)
-  library("stringr", quietly=TRUE)
-  library("raster", quietly=TRUE)
-  library("sf", quietly=TRUE)
   
   start_time <- Sys.time()
   
@@ -48,7 +38,7 @@ iso_accessibilite <- function(
   
   dir.create("{logs}/logs" %>% glue, showWarnings = FALSE, recursive=TRUE)
   timestamp <- lubridate::stamp("15-01-20 10h08.05", orders = "dmy HMS", quiet=TRUE) (lubridate::now())
-  logfile <- glue("{logs}/logs/iso_accessibilite.{routing$type}.{timestamp}.log")
+  logfile <- glue::glue("{logs}/logs/iso_accessibilite.{routing$type}.{timestamp}.log")
   log_appender(appender_file(logfile))
   
   log_success("Calcul accessibilité version 2")
@@ -61,11 +51,14 @@ iso_accessibilite <- function(
   log_success("future:{future}")
   log_success("out:{out}")
   
-  opp_var <- names(quoi %>% dplyr::as_tibble() %>% dplyr::select(where(is.numeric)))
+  opp_var <- names(quoi %>%
+                     dplyr::as_tibble() %>%
+                     dplyr::select(where(is.numeric)))
   if(length(opp_var)==0)
   {
     opp_var <- "c"
-    quoi <- quoi %>% dplyr::mutate(c=1)
+    quoi <- quoi %>%
+      dplyr::mutate(c=1)
   }
   
   names(opp_var) <- opp_var
@@ -107,7 +100,8 @@ iso_accessibilite <- function(
   if(table2disk & is.null(dir)) 
   {
     dir <- tempdir()
-    walk(ou_gr, ~file.remove(str_c(dir,"/", .x,".*")))
+    purrr::walk(ou_gr,
+                ~file.remove(str_c(dir,"/", .x,".*")))
     }
   
   if(!is.null(routing$groupes)) 
@@ -115,41 +109,47 @@ iso_accessibilite <- function(
 
   message("...calcul des temps de parcours")
 
-  with_progress({
-    pb <- progressor(steps=sum(groupes$Nous))
-    if(routing$future&future)
-    {
-      plan(plan())
-      pids <- furrr::future_map(1:(future::nbrOfWorkers()), ~future:::session_uuid()[[1]])
-      lt <- log_threshold()
-      access <- furrr::future_map(ou_gr, function(g) {
+  pb <- progressr::progressor(steps=sum(groupes$Nous))
+  if(routing$future&future)
+  {
+    pl <- future::plan()
+    future::plan(pl)
+    pids <- furrr::future_map(
+      1:(future::nbrOfWorkers()), 
+      ~future:::session_uuid()[[1]])
+    lt <- log_threshold()
+    access <- furrr::future_map(
+      ou_gr,
+      function(g) {
         log_threshold(lt)
         log_appender(logger::appender_file(logfile))
         pb(amount=groupes$Nous[[g]])
         rrouting <- get_routing(routing, g)
         access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
-        },.options=furrr::furrr_options(seed=TRUE, 
-                                        packages=c("data.table", "logger", "stringr", "glue"),
-                                        scheduling = 1))
-      }
-    else
-      {
-        pids <- future:::session_uuid()[[1]]
-        access <- purrr::map(ou_gr, function(g) {
-          pb(amount=groupes$Nous[[g]])
-          rrouting <- get_routing(routing, g)
-          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
-        })
-        }
-    access <- rbindlist(access)
-  },handlers=handler_progress(format=":bar :percent :eta", width=80))
+      },
+      .options=furrr::furrr_options(seed=TRUE, 
+                                      packages=c("data.table", "logger", "stringr", "glue"),
+                                      scheduling = 1))
+  }
+  else
+  {
+    pids <- future:::session_uuid()[[1]]
+    access <- purrr::map(ou_gr, function(g) {
+      pb(amount=groupes$Nous[[g]])
+      rrouting <- get_routing(routing, g)
+      access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
+    })
+  }
+  
+  access <- data.table::rbindlist(access)
+
   
   if(ttm_out)
   {
     message("...finalisation du routing engine")
     gc()
-    plan(plan()) # pour reprendre la mémoire
-    access <- map(access$file,~{
+    future::plan(future::plan()) # pour reprendre la mémoire
+    access <- purrr::map(access$file,~{
       tt <- qs::qread(.x, nthreads=4)
       tt[, .(fromId, toId, travel_time)]
       setkey(tt, fromId)
@@ -175,7 +175,8 @@ iso_accessibilite <- function(
   else
     {
       if(table2disk)
-        access <- rbindlist(map(access$file,~qs::qread(.x, nthreads=4)))
+        access <- rbindlist(
+          purrr::map(access$file,~qs::qread(.x, nthreads=4)))
       
       npaires <- sum(access[, .(npaires=npep[[1]]), by=fromId][["npaires"]])
       access[, `:=`(npea=NULL, npep=NULL)]
@@ -211,14 +212,16 @@ iso_accessibilite <- function(
       res <- switch(
         out,
         data.table = access_c,
-        sf = access_c %>% as_tibble() %>% st_as_sf(coords=c("x","y"), crs=3035),
+        sf = access_c %>%
+          dplyr::as_tibble() %>%
+          sf::st_as_sf(coords=c("x","y"), crs=3035),
         raster = {
           message("...rastérization")
-          ttn <- str_c("iso",tt, "m")
+          ttn <- stringr::str_c("iso",tt, "m")
           ids <- idINS3035(ou_4326$x, ou_4326$y, resolution = outr)
           ids <- data.table(fromId=ou_4326$id, idINS200=ids)
-          map(opp_var, function(v) {
-            r_xy <- dcast(access_c, fromId~temps, value.var=v)
+          purrr::map(opp_var, function(v) {
+            r_xy <- data.table::dcast(access_c, fromId~temps, value.var=v)
             names(r_xy) <- c("fromId", ttn)
             r_xy <- merge(r_xy, ids, by="fromId")[, fromId:=NULL]
             dt2r(r_xy, resolution=outr)
@@ -228,10 +231,10 @@ iso_accessibilite <- function(
       tmn <- second2str(dtime)
       speed_b <- npaires_brut/dtime
       speed <- npaires/dtime
-      mtime <- "{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction" %>% glue()
+      mtime <-glue::glue("{tmn} - {f2si2(npaires)} routes - {f2si2(speed_b)} routes(brut)/s - {f2si2(speed)} routes/s - {signif(red,2)}% reduction")
       message(mtime)
       log_success("{routing$string} en {mtime}")
-      attr(res, "routing")<- ("{routing$string} en {mtime}" %>% glue)
+      attr(res, "routing")<- glue::glue("{routing$string} en {mtime}")
     }
   message("...nettoyage")
   plan(plan())
@@ -274,18 +277,18 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
     quoi_surf <- st_area(quoi) %>% as.numeric()
     gc()
     rrr_3035 <- 
-      brick(
-        map(
+      raster::brick(
+        purrr::map(
           opp_var,
           ~(
-            fasterize(
-              quoi %>% mutate(field = get(.x)/quoi_surf),
-              disaggregate(raster_ref(quoi, resolution), fact=rf), 
+            fasterize::fasterize(
+              quoi %>% dplyr::mutate(field = get(.x)/quoi_surf),
+              raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
               fun="sum",
               background=0,
               field="field")*(resolution/rf)^2)))
     if(rf>1) 
-      rr_3035 <- aggregate(rrr_3035, fact=rf, fun=mean)
+      rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
     else
       rr_3035 <- rrr_3035
     xy_3035 <- coordinates(rr_3035)

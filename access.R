@@ -19,7 +19,7 @@ pkg <-
 dvfpackages <- intersect(dvfpackages, installed.packages())
 
 # rend silencieux library
-flibrary <- library
+flibrary <- base::library
 library <- function(...) suppressPackageStartupMessages(flibrary(...))
 
 dvflib <-
@@ -28,7 +28,7 @@ dvflib <-
 
 # multicore
 
-plan(multicore, workers= availableCores()%/%4)
+plan(multisession, workers= availableCores()%/%2)
 message("{nbrOfWorkers()} workers" %>% glue)
 
 options(dplyr.summarise.inform=FALSE)
@@ -74,10 +74,14 @@ tmap_options(max.raster = c(plot = 1e+9, view = 1e+9))
 options(future.globals.maxSize= 1024^3)
 
 # chemin des fichiers sources
-GD <- Sys.getenv("GOOGLE_DRIVE")[[1]]
-LD <- Sys.getenv("LOCAL_DATA")[[1]]
+GD <- Sys.getenv("GOOGLE_DRIVE")
+LD <- Sys.getenv("LOCAL_DATA")
+
 if (GD=="") GD <- "G:/Mon Drive"
 DVFdata <- "{GD}/DVFdata" %>% glue
 # répertoire local
 localdata <- "{LD}/DVF" %>% glue
 fdc851 <- load_DVF("uu851")
+
+progressr::handlers(global = TRUE)
+progressr::handlers(progressr::handler_progress(format=":bar :percent :eta", width=80))

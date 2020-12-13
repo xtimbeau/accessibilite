@@ -518,7 +518,7 @@ kernel_polychronique <- function (on_pos, sfdata, var, minutes=c(5,10,15), poids
   points_m <- matrix(c(sfdata.temp$X+resolution/2, sfdata.temp$Y+resolution/2), ncol=2)
   sp <- SpatialPoints(points_m, proj4string = rgdal::CRS(uprojargs=pstring))
   datasp <- SpatialPointsDataFrame(sp, sfdata.temp)
-  rrr <- raster(nrows=nrows, ncols=ncols, ext=ext, crs=rgdal::CRS(uprojargs=pstring) , resolution=resolution/res_fac)
+  rrr <- raster(nrows=nrows, ncols=ncols, ext=ext, crs=sp::CRS(uprojargs=pstring) , resolution=resolution/res_fac)
   rastered_var <- rasterize(x=datasp, y=rrr, fun="sum", field="summary")
   names(minutes) <- str_c("iso", minutes, "m")
   minutes <- minutes[sort(names(minutes))]

@@ -242,13 +242,14 @@ routing_setup_otpv1 <- function(
   precisionMeters=50)
   
 {
+  s_now <- lubridate::now()
   mode_string <- str_c(mode, collapse = "&")
   list(
     type = "otpv1",
-    string="otpv1 routing {mode_string} sur {router}(:{port}) à {now()}" %>% glue,
+    string=glue::glue("otpv1 routing {mode_string} sur {router}(:{port}) à {s_now}"),
     otpcon = OTP_server(router=router, port=port, memory = memory, rep=rep),
-    date = unlist(str_split(date, " "))[[1]],
-    time= unlist(str_split(date, " "))[[2]],
+    date = unlist(stringr::str_split(date, " "))[[1]],
+    time= unlist(stringr::str_split(date, " "))[[2]],
     mode=mode,
     batch = FALSE,
     arriveBy = FALSE, 
@@ -268,10 +269,11 @@ routing_setup_osrm <- function(
   future=TRUE)
   
 {
+  s_now <- lubridate::now()
   list(
     type = "osrm",
-    string="osrm routing localhost:{server} profile {profile} à {now()}" %>% glue,
-    osrm.server = "http://localhost:{server}/" %>% glue,
+    string=glue::glue("osrm routing localhost:{server} profile {profile} à {s_now}"),
+    osrm.server =glue::glue("http://localhost:{server}/"),
     osrm.profile=profile,
     future=TRUE,
     mode=switch(profile,
