@@ -14,7 +14,7 @@ rastermap <-
 
     raster.temp <- rastervar(data=data, var={{var}}, fun=fun, dropth=dropth, resolution=resolution)
     
-    text.temp <-ifelse(!is.null(label), label, quo_name(quo_var))
+    text.temp <-ifelse(!is.null(label), label, rlang::quo_name(quo_var))
     decor$fdc+
       tm_shape(raster.temp, bbox=bbox) +
       tm_raster(title = str_c("Dens. ", text.temp), style=style, palette = palette, ...)+
@@ -365,7 +365,7 @@ raster_max <- function(sf1, sf2, resolution=200) {
 projectrgb <- function(rgb, crs="3035")
 {
   maxs <- raster::cellStats(rgb, max)
-  rgbp <- raster::projectRaster(from=rgb, crs=CRS("EPSG:{crs}" %>% glue::glue)) # la projection fait un truc bizarre sur les entiers
+  rgbp <- raster::projectRaster(from=rgb, crs=CRS(glue::glue("EPSG:{crs}"))) # la projection fait un truc bizarre sur les entiers
   rgbp <- rgbp/raster::cellStats(rgbp, max)*maxs %>%
     round() # on remet tout comme avant mais en 3035
   rgbp
