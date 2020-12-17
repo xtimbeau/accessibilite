@@ -200,7 +200,7 @@ raster_ref <- function(data, resolution=200, crs=3035)
               xmax=max(data$x, na.rm=TRUE),
               ymin=min(data$y, na.rm=TRUE), 
               ymax=max(data$y, na.rm=TRUE))
-    crs <- sp::CRS(SRS_string=glue::glue("EPSG:{crs}"))
+    crs <- sp::CRS(CRS(st_crs(crs)$proj4string))
   }
   ext <- raster::extent(floor(b$xmin / alignres )*alignres,
                 ceiling(b$xmax/alignres)*alignres,
@@ -262,7 +262,7 @@ r2dt <- function(raster, resolution=NULL, fun=mean)
   vars <- names(raster)
   dt <- as.data.frame(raster, xy=TRUE, centroids=TRUE)
   data.table::setDT(dt)
-  dt <- data.table::na.omit(data.table::melt(dt, measure.vars=vars), "value")
+  dt <- na.omit(data.table::melt(dt, measure.vars=vars), "value")
   dt <- data.table::dcast(dt, x+y~variable, value.var="value")
   dt[, idINS := idINS3035(x, y, resolution=base_res)]
   data.table::setnames(dt, "idINS",str_c("idINS", base_res))
@@ -348,6 +348,7 @@ dt2r <- function(dt, resolution=NULL, idINS="idINS")
         r
         }))
   names(brickette) <- layers
+  crs(brickette) <- sp::CRS(st_crs(3035)$proj4string)
   brickette
   }
 

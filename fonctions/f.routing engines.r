@@ -1,14 +1,15 @@
 # routing engines ---------------------
 
 
-iso_ttm <- function(o, d, tmax, routing)
+  iso_ttm <- function(o, d, tmax, routing)
 {
   log_debug("iso_ttm:{tmax} {nrow(o)} {nrow(d)}")
   r <- switch(routing$type,
               "r5" = r5_ttm(o, d, tmax, routing),
               "otpv1" = otpv1_ttm(o, d, tmax, routing),
               "osrm" = osrm_ttm(o, d, tmax, routing),
-              "dt"= dt_ttm(o, d, tmax, routing))
+              "dt"= dt_ttm(o, d, tmax, routing),
+              "euclidean" = euc_ttm(o, d, tmax, routing))
   log_debug("result:{nrow(r$result)}")
   r
 }
@@ -19,7 +20,8 @@ safe_ttm <- function(routing)
          "r5" = r5_ttm,
          "otpv1" = otpv1_ttm,         
          "osrm" = osrm_ttm,
-         "dt"= dt_ttm)
+         "dt"= dt_ttm,
+         "euclidean" = euc_ttm)
 }
 
 delayRouting <- function(delay, routing)
@@ -86,6 +88,31 @@ r5_ttm <- function(o, d, tmax, routing)
     log_warn("erreur r5::travel_time_matrix, retourne une matrice vide après 2 essais")
   res
 }
+
+euc_ttm <- function(o, d, tmax, routing)
+{
+  library(rdist)
+  mode <- routing$mode
+  vitesse <- routing$speed
+  
+  o <- o[, .(id=as.character(id),lon,lat)]
+  d <- d[, .(id=as.character(id),lon,lat)]
+  
+  o_3035 <- sf_project(from=st_crs(4326), to=st_crs(3035), o[, .(lon, lat)])
+  d_3035 <- sf_project(from=st_crs(4326), to=st_crs(3035), d[, .(lon, lat)])
+  dist <- rdist::cdist(X=o_3035, Y=d_3035, metric="euclidean", p=2)
+  dist <- dist/(vitesse*1000/60)
+  colnames(dist) <- d$id
+  rownames(dist) <- o$id
+  dt <- data.table(dist, keep.rownames=TRUE)
+  setnames(dt, "rn", "fromId")
+  dt[, fromId:=as.integer(fromId)]
+  dt <- melt(dt, id.vars="fromId", variable.name="toId", value.name = "travel_time", variable.factor = FALSE)
+  dt <- dt[travel_time<tmax,]
+  dt[, `:=`(toId = as.integer(toId), travel_time = as.integer(ceiling(travel_time)))]
+  list(error=NULL,
+       result=dt)
+  }
 
 otpv1_ttm <- function(o, d, tmax, routing)
 {
@@ -280,4 +307,17 @@ routing_setup_osrm <- function(
                 driving="CAR",
                 walk="WALK",
                 bike="BIKE"))
+}
+
+routing_setup_euc <- function(
+  mode="WALK", speed=5)
+  
+{
+  s_now <- lubridate::now()
+  list(
+    type = "euclidean",
+    string=glue::glue("euclidien à {s_now}"),
+    future=TRUE,
+    mode=mode,
+    speed=speed)
 }

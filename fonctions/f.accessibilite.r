@@ -189,7 +189,7 @@ iso_accessibilite <- function(
       access[,gr:=NULL]
       message("...cumul")
       setnames(access, new="temps", old="travel_time")
-      timecrossou <- CJ(fromId=ou_4326$id,temps=c(1:tmax), sorted=FALSE)
+      timecrossou <- CJ(fromId=ou_4326$id,temps=c(0:tmax), sorted=FALSE)
       access <- merge(timecrossou, access, by=c("fromId", "temps"), all.x=TRUE)
       for (v in opp_var) 
         set(access, i=which(is.na(access[[v]])), j=v, 0)
