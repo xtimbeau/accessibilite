@@ -151,49 +151,39 @@ osrm_ttm <- function(o, d, tmax, routing)
   library("osrm", quietly=TRUE)
   options(osrm.server = routing$osrm.server, 
           osrm.profile = routing$osrm.profile)
-  # safe_table <- safely(osrm::osrmTable)
+  safe_table <- safely(osrm::osrmTable)
   l_o <- o[, .(id, lon, lat)]
   l_d <- d[, .(id, lon, lat)]
-  # if(routing$future)
-  #   {
-  #   ptable <- future_map(1:nrow(o), function(i) {
-  #     options(osrm.server = routing$osrm.server, 
-  #             osrm.profile = routing$osrm.profile)
-  #     osrm::osrmTable(
-  #       src = l_o[i,],
-  #       dst= l_d,
-  #       exclude=NULL,
-  #       gepaf=FALSE,
-  #       measure="duration")
-  #     },.options=furrr_options(seed=TRUE, 
-  #                              packages=c("data.table", "osrm", "sf", "utils", "RCurl", "jsonlite", "purrr")))
-  #   
-  #   table <- NULL
-  #   table$error <- NULL
-  #   table$result$duration <- do.call(rbind, map(ptable, ~.$duration))
-  #   }
-  # else
-  # {
-  table <- list(
-    result = osrm::osrmTable(
+  tt <- safe_table(
+    src = l_o,
+    dst= l_d,
+    exclude=NULL,
+    gepaf=FALSE,
+    measure="duration")
+  if(!is.null(tt$error))
+  {
+    gc()
+    log_warn("deuxieme essai osrm")
+    tt <- safe_table(
       src = l_o,
       dst= l_d,
       exclude=NULL,
       gepaf=FALSE,
-      measure="duration"),
-    error =NULL)
-  # }
+      measure="duration")
+  }
   
-  if(is.null(table$error))
+  if(is.null(tt$error))
   {
-    dt <- data.table(table$result$duration, keep.rownames = TRUE)
+    dt <- data.table(tt$result$duration, keep.rownames = TRUE)
     dt[, fromId:=rn %>% as.integer] [, rn:=NULL]
     dt <- melt(dt, id.vars="fromId", variable.name="toId", value.name = "travel_time", variable.factor = FALSE)
     dt <- dt[travel_time<tmax,]
     dt[, `:=`(toId = as.integer(toId), travel_time = as.integer(ceiling(travel_time)))]
-    table$result <- dt
+    tt$result <- dt
   }
-  table
+  else
+    log_warn("erreur osrm::osrmTable, retourne une matrice vide après 2 essais")
+  tt
 }
 
 dt_ttm <- function(o, d, tmax, routing)
