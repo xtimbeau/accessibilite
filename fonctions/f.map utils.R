@@ -73,7 +73,7 @@ idINS2square <- function(ids, resolution=NULL)
     rep(resolution, length(x))
   purrr::pmap(list(x,y,r), ~sf::st_polygon(
     list(matrix(
-      c(..1, ..1+r..3,..1+..3,..1, ..1,
+      c(..1, ..1+..3,..1+..3,..1, ..1,
         ..2, ..2, ..2+..3,..2+..3,..2),
       nrow=5, ncol=2)))) %>%
     sf::st_sfc(crs=3035)
@@ -191,7 +191,7 @@ raster_ref <- function(data, resolution=200, crs=3035)
   if("sf"%in%class(data))
   {
     b <- sf::st_bbox(data)
-    crs <- sf::st_crs(data)$proj4string
+    crss <- sf::st_crs(data)$proj4string
     }
   else
   {
@@ -200,13 +200,13 @@ raster_ref <- function(data, resolution=200, crs=3035)
               xmax=max(data$x, na.rm=TRUE),
               ymin=min(data$y, na.rm=TRUE), 
               ymax=max(data$y, na.rm=TRUE))
-    crs <- sp::CRS(CRS(st_crs(crs)$proj4string))
+    crss <- sp::CRS(st_crs(crs)$proj4string)
   }
   ext <- raster::extent(floor(b$xmin / alignres )*alignres,
                 ceiling(b$xmax/alignres)*alignres,
                 floor(b$ymin/alignres)*alignres,
                 ceiling(b$ymax/alignres)*alignres)
-  raster::raster(ext, crs=crs,  resolution=resolution)
+  raster::raster(ext, crs=crss,  resolution=resolution)
 }
 
 

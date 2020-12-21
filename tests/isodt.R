@@ -15,8 +15,7 @@ c200_idfdt <- c200_idf %>%
   st_drop_geometry() %>%
   as.data.table()
 
-fdt_idf_50 <- load_DVF("fdt_idf_50") 
-fdt_idf_50 <- swap2tmp_routing(fdt_idf_50, qs=TRUE)
+fdt <- routing_setup_dt("fdt_idf_50")
 plan(multisession, workers=8)
 
 # ecomos -----------------
@@ -35,7 +34,7 @@ rr <- iso_accessibilite(
   resolution=50,                    
   tmax=20,                         
   pdt=1,                          
-  routing=fdt_idf_50)
+  routing=fdt)
 
 ist_ecomos <- rr$c %>% iso2time(c(1,5,10,15,20,25,30,35,40,45,50,100))
 save_DVF(ist_ecomos)
@@ -60,7 +59,7 @@ korine <- iso_accessibilite(
   resolution=50,                    
   tmax=20,                         
   pdt=1,                          
-  routing=fdt_idf_50)
+  routing=fdt)
 
 save_DVF(korine, rep="rda/isoIDF")
 korine <- load_DVF("isoIDF/korine")

@@ -45,9 +45,9 @@ load_result <- function(x) {
 
 # enregistre un objet R dans le répertoire DVF
 
-load_DVF <- function(str, rep = "Rda", local = FALSE) {
+load_DVF <- function(file, rep = "Rda", local = FALSE) {
   env <- parent.frame()
-  str <- glue::glue(str, .envir = env)
+  str <- glue::glue(file, .envir = env)
   rep <- if (local) localdata else glue::glue("{DVFdata}/{rep}")
   filename <- glue::glue("{rep}/{str}.rda")
   what <- qs::qread(filename, nthreads = 4)

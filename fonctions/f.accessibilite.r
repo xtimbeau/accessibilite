@@ -104,9 +104,6 @@ iso_accessibilite <- function(
                 ~file.remove(str_c(dir,"/", .x,".*")))
     }
   
-  if(!is.null(routing$groupes)) 
-    routing <- swap2tmp_routing(routing)
-
   message("...calcul des temps de parcours")
 
   pb <- progressr::progressor(steps=sum(groupes$Nous))
@@ -148,7 +145,8 @@ iso_accessibilite <- function(
   {
     message("...finalisation du routing engine")
     gc()
-    future::plan(future::plan()) # pour reprendre la mémoire
+    pl <- future::plan()
+    future::plan(pl) # pour reprendre la mémoire
     access <- purrr::map(access$file,~{
       tt <- qs::qread(.x, nthreads=4)
       tt[, .(fromId, toId, travel_time)]
@@ -170,7 +168,8 @@ iso_accessibilite <- function(
       res_ou = resolution,
       res_quoi = res_quoi,
       ancres=FALSE, 
-      future=TRUE)
+      future=TRUE, 
+      mode=routing$mode)
     }
   else
     {
@@ -286,9 +285,10 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
               raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
               fun="sum",
               background=0,
-              field="field")*(resolution/rf)^2)))
+              field="field")*(resolution/rf)^2
+            )))
     if(rf>1) 
-      rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=mean)
+      rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=sum)
     else
       rr_3035 <- rrr_3035
     xy_3035 <- coordinates(rr_3035)
@@ -424,7 +424,9 @@ swap2tmp_routing <- function(routing, qs=TRUE) {
   if(!is.null(routing$tempdir))
     return(routing)
   dir <- tempdir()
+  pb <- progressr::progressor(along=routing$groupes)
   routing$time_table <- map_chr(routing$groupes, ~{
+    pb()
     file <- if(qs) 
       "{dir}/{.x}.rda" %>% glue
     else 
@@ -441,16 +443,17 @@ swap2tmp_routing <- function(routing, qs=TRUE) {
   }
 
 get_routing <- function(routing, groupe) {
-  library("stringr", quietly=TRUE)
   library("data.table", quietly=TRUE)
-  library("qs", quietly=TRUE)
+  
   if(is.null(routing$groupes))
     return(routing)
-  ext <- str_extract(routing$time_table, "(?<=\\.)[:alnum:]*(?!\\.)")
+  file <- routing$time_table[[groupe]]
+  ext <- stringr::str_extract(file, "(?<=\\.)[:alnum:]*(?!\\.)")
   if (ext=="csv")
-    routing$time_table <- fread(routing$time_table[[groupe]])
+    routing$time_table <- data.table::fread(file)
   else
-    routing$time_table <- qread(routing$time_table[[groupe]], nthreads=4)
+    routing$time_table <- qs::qread(file, nthreads=4)
+  routing$groupes=groupe
   routing
 }
 

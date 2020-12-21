@@ -19,9 +19,9 @@ fdt_idf_50 <- iso_accessibilite(
   ou = c200_idf,
   resolution=res,
   routing=foot_osrm,
-  tmax=30,
+  tmax=20,
   ttm_out = TRUE, 
   future=TRUE,
   dir="{localdata}/osrm_foot_45_50" %>% glue)
 
-save_DVF(fdt_idf_50, preset="high")
+save_DVF(fdt_idf_50, preset="high", local=TRUE)

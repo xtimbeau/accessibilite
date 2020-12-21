@@ -202,6 +202,33 @@ dt_ttm <- function(o, d, tmax, routing)
   )
 }
 
+routing_setup_dt <- function(file,
+                             rep="rda",
+                             date=NULL,
+                             mode=NULL,
+                             future=NULL)
+{
+  message("...loading")
+  fdt <- load_DVF(file=file, rep=rep) 
+  message("...swapping")
+  fdt <- swap2tmp_routing(fdt, qs=TRUE)
+  os <- fdt$origin_string
+  list(
+    type = "dt",
+    string=glue::glue("précalculé à partir de {os}"),
+    mode=if(is.null(mode)) fdt$mode else mode,
+    future=if(is.null(future)) fdt$future else future,
+    time_table=fdt$time_table,
+    ancres=fdt$ancres,
+    resolution=fdt$resolution,
+    res_ou=fdt$res_ou,
+    res_quoi=fdt$res_quoi,
+    toId = fdt$toId,
+    fromId=fdt$fromId,
+    groupes=fdt$groupes
+    )
+}
+
 routing_setup_r5 <- function(path,
                              date="17-12-2019 8:00:00",
                              mode=c("WALK", "TRANSIT"),
