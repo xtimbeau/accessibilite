@@ -19,7 +19,7 @@ fdt_idf_50 <- iso_accessibilite(
   ou = c200_idf,
   resolution=res,
   routing=foot_osrm,
-  tmax=20,
+  tmax=30,
   ttm_out = TRUE, 
   future=TRUE,
   dir="{localdata}/osrm_foot_45_50" %>% glue)

@@ -7,7 +7,7 @@ iso_accessibilite <- function(
   ou=NULL,                         # positions sur lesquelles sont calculés les accessibilités (si NULL, sur une grille)
   res_quoi=Inf,                    # projection éventuelle des lieux sur une grille
   resolution=ifelse(is.null(ou), 200, Inf),
-  fun_quoi="any",                    # si projection fonction d'agrégation
+  var_quoi="individuals",          # si projection fonction d'agrégation
   routing,                         # défini le moteur de routage
   tmax=10L,                        # en minutes
   pdt=1L,

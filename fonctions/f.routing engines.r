@@ -204,12 +204,13 @@ dt_ttm <- function(o, d, tmax, routing)
 
 routing_setup_dt <- function(file,
                              rep="rda",
+                             local="FALSE",
                              date=NULL,
                              mode=NULL,
                              future=NULL)
 {
   message("...loading")
-  fdt <- load_DVF(file=file, rep=rep) 
+  fdt <- load_DVF(file=file, rep=rep, local=local) 
   message("...swapping")
   fdt <- swap2tmp_routing(fdt, qs=TRUE)
   os <- fdt$origin_string

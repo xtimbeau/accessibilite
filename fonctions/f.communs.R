@@ -65,7 +65,7 @@ load_DVF <- function(file, rep = "Rda", local = FALSE) {
 
 # lit un objet R depuis le répertoire DVF
 
-save_DVF <- function(x, nom = NULL, rep = "Rda", local = FALSE, preset = "fast") {
+save_DVF <- function(x, nom = NULL, rep = "Rda", local = TRUE, preset = "fast") {
   ex <- rlang::enquo(x)
   n_x <- rlang::as_name(ex)
   rep_u <- if (local) {
