@@ -68,10 +68,12 @@ CORINE_fr <- load_DVF("CORINE_fr")
 CORINE_idf <- CORINE_fr %>%
   filter(Code_18%in%c(141,142)|str_detect(Code_18, "^3")|str_detect(Code_18, "^4")) %>% 
   filter(st_intersects(., idf %>% st_buffer(4000), sparse=FALSE)) %>% 
-  mutate(area=as.numeric(st_area(.)))
+  mutate(area=as.numeric(st_area(.)), c=1) %>%
+  st_agr_constant(area) %>% 
+  st_agr_aggregate(c)
 
 kfoot_corine_50 <- iso_accessibilite(
-  quoi = CORINE_idf %>% select(area),
+  quoi = CORINE_idf %>% select(area, c),
   ou=c200_idf,
   resolution=50,
   tmax=20,

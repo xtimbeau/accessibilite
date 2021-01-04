@@ -112,16 +112,7 @@ lsave_DVF <- function(xgb, nom = NULL) {
 }
 
 lload_DVF <- function(x) {
-  filename <- glue::glue("{localdata}/{x}.rda")
-  xgb <- qs::qread(filename, nthreads = 4)
-  mods <- purrr::map(xgb$mods, ~ {
-    fn <- tempfile("xgb", tmpdir = tempdir())
-    xgbmsave(.x, fn)
-    fn
-  })
-  xgb$bp$xgbmod <- mods
-  xgb$mods <- NULL
-  xgb
+  load_DVF(x, local=TRUE)
 }
 # lorsque le tiblle contient une géometry (sf) select garde la géométrie t_select l'oublie
 

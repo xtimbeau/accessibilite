@@ -371,3 +371,25 @@ projectrgb <- function(rgb, crs="3035")
     round() # on remet tout comme avant mais en 3035
   rgbp
 }
+
+st_agr_constant <- function(data, ...)
+{
+  vvar <- enquos(...)
+  aggr <- st_agr(data)
+   for(v in vvar)
+      aggr[[quo_name(v)]]<-"constant"
+  ldata <- data
+  st_agr(ldata) <- aggr
+  return(ldata)
+}
+
+st_agr_aggregate <- function(data, ...)
+{
+  vvar <- enquos(...)
+  aggr <- st_agr(data)
+  for(v in vvar)
+    aggr[[quo_name(v)]]<-"aggregate"
+  ldata <- data
+  st_agr(ldata) <- aggr
+  return(ldata)
+}

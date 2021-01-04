@@ -1,0 +1,13 @@
+source("access.r")
+library(tidytransit)
+library(ggspatial)
+idfm <- read_gtfs("{localdata}/IDFM 2019.02/gtfs 20 2 19 au 17 3 19.zip" %>% glue)
+idfm <- set_servicepattern(idfm)
+
+sncf <- read_gtfs("c:/users/82261/downloads/export-ter-gtfs-last.zip")
+sncfic <- read_gtfs("c:/users/82261/downloads/export-intercites-gtfs-last.zip")
+lsncf <- map_dfr(sncf$routes %>% filter(route_type==2) %>% pull(route_id), ~get_line(.x, sncf))
+lsncfic <- map_dfr(sncfic$routes %>% filter(route_type==2) %>% pull(route_id), ~get_line(.x, sncfic))
+lidfm <- map_dfr(idfm$routes %>% filter(route_type!=3) %>% pull(route_id), ~get_line(.x, idfm))
+lbus <- map_dfr(idfm$routes %>% filter(route_type==3) %>% pull(route_id), ~get_line(.x, idfm))
+ggplot()+annotation_map_tile(type="hillshade", zoomin=0)+geom_sf(aes(col=route_id, group=route_id),data=lidfm %>% filter(line=TRUE), show.legend = FALSE)

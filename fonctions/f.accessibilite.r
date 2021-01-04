@@ -275,22 +275,37 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
     quoi <- quoi %>% st_transform(3035)
     quoi_surf <- st_area(quoi) %>% as.numeric()
     gc()
-    rrr_3035 <- 
+    rr_3035 <- 
       raster::brick(
         purrr::map(
           opp_var,
-          ~(
-            fasterize::fasterize(
-              quoi %>% dplyr::mutate(field = get(.x)/quoi_surf),
-              raster::disaggregate(raster_ref(quoi, resolution), fact=rf), 
-              fun="sum",
-              background=0,
-              field="field")*(resolution/rf)^2
-            )))
-    if(rf>1) 
-      rr_3035 <- raster::aggregate(rrr_3035, fact=rf, fun=sum)
-    else
-      rr_3035 <- rrr_3035
+          ~{
+            if(st_agr(quoi)[[.x]]=="constant")
+              {
+              fonction <- mean
+              facteur <- 1
+              }
+            else 
+            {
+              fonction <- sum
+              facteur <- (resolution/rf)^2/quoi_surf
+              }
+            if(rf>1)
+              rref <- raster::disaggregate(raster_ref(quoi, resolution), fact=rf)
+            else
+              rref <- raster_ref(quoi, resolution)
+            un_raster <- 
+              fasterize::fasterize(
+                quoi %>% dplyr::mutate(field = get(.x)*facteur),
+                rref,
+                fun="sum",
+                background=0,
+                field="field")
+            if(rf>1) 
+              un_raster <- raster::aggregate(un_raster, fact=rf, fun=fonction)
+            un_raster 
+          }))
+    
     xy_3035 <- coordinates(rr_3035)
     quoi_3035 <- data.table(rr_3035 %>% as.data.frame(),
                             x=xy_3035[,1] %>% round(), 
@@ -304,7 +319,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
     quoi_4326 <- quoi_4326[keep,]
     xy_3035 <-quoi_4326[, .(x,y)] %>% as.matrix
     xy_4326 <- sf_project(xy_3035, from = st_crs(3035), to = st_crs(4326))
-    rm(rrr_3035,rr_3035)
+    rm(rr_3035)
     gc()
   }
   else
@@ -461,7 +476,9 @@ vmaxmode <- function(mode)
 {
   vitesse <- case_when(
     "TRANSIT"%in%mode ~ 40/60*1000,
-    "CAR"%in%mode ~ 80/60*1000,
+    "RAIL"%in%mode ~ 40/60*1000,
+    "BUS"%in%mode ~ 15/60*1000,
+    "CAR"%in%mode ~ 60/60*1000,
     "BIKE"%in%mode ~ 12/60*1000,
     "WALK"%in%mode ~ 5/60*1000,
     TRUE ~ 60/60*1000) # vitesse en metre par minute
