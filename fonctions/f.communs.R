@@ -45,12 +45,17 @@ load_result <- function(x) {
 
 # enregistre un objet R dans le répertoire DVF
 
-load_DVF <- function(file, rep = "Rda", local = FALSE) {
+load_DVF <- function(file, rep = "Rda", local = FALSE, qs=TRUE) {
   env <- parent.frame()
   str <- glue::glue(file, .envir = env)
   rep <- if (local) localdata else glue::glue("{DVFdata}/{rep}")
   filename <- glue::glue("{rep}/{str}.rda")
-  what <- qs::qread(filename, nthreads = 4)
+  what <- if(qs) 
+    qs::qread(filename, nthreads = 4) 
+  else {
+    obj <- load(filename)
+    get(obj)
+  }
   if ("mods" %in% names(what)) {
     mods <- purrr::map_chr(what$mods, ~ {
       fn <- tempfile("xgb", tmpdir = tempdir())

@@ -43,7 +43,7 @@ disichrone <- function(data, dist, mass=Ind, by="", n=512, bw="nrd0", adjust=1)
         to=max_dist,
         bw=data_density$bw,
         n=n, 
-        adjust=1)
+        adjust=adjust)
       tibble(dist=grp_density$x, 
              density=grp_density$y*grp_mass/total_mass,
              mass=grp_density$y*grp_mass, 

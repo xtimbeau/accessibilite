@@ -43,7 +43,7 @@ r5_ttm <- function(o, d, tmax, routing)
   library("r5r", quietly=TRUE)
   o <- o[, .(id=as.character(id),lon,lat)]
   d <- d[, .(id=as.character(id),lon,lat)]
-  safe_ttm <- purrr::safely(r5r::travel_time_matrix)
+  safe_ttm <- purrr::safely(travel_time_matrix_c)
   
   res <- safe_ttm(
     r5r_core = routing$core,
@@ -59,7 +59,8 @@ r5_ttm <- function(o, d, tmax, routing)
     bike_speed = routing$bike_speed,
     max_rides = routing$max_rides,
     n_threads = routing$n_threads,
-    verbose=FALSE)
+    verbose=FALSE, 
+    draws = routing$montecarlo)
   
   if(!is.null(res$error))
   {
@@ -85,7 +86,10 @@ r5_ttm <- function(o, d, tmax, routing)
   if (is.null(res$error)&&nrow(res$result)>0)
     res$result[, `:=`(fromId=as.integer(fromId), toId=as.integer(toId), travel_time=as.integer(travel_time))]
   else
-    log_warn("erreur r5::travel_time_matrix, retourne une matrice vide après 2 essais")
+    {
+      log_warn("erreur r5::travel_time_matrix, retourne une matrice vide après 2 essais")
+      res$result <- data.table(fromId=numeric(), toId=numeric(), travel_time=numeric())
+    }
   res
 }
 
@@ -247,6 +251,7 @@ routing_setup_r5 <- function(path,
   path <- glue::glue(path, .envir = env)
   mode_string <- stringr::str_c(mode, collapse = "&")
   r5r::stop_r5()
+  rJava::.jgc(R.gc = TRUE)
   core <- r5r::setup_r5(data_path = path, verbose=FALSE)
   core$setNumberOfMonteCarloDraws(as.integer(montecarlo))
   mtnt <- lubridate::now()

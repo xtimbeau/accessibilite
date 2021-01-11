@@ -23,8 +23,7 @@ iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
     as.matrix()
   ncol <- ncol(mm)
   nrow <- nrow(mm)
-  pb <- progressr::progressor(steps=length(seuils))
-  rr <- purrr::map(seuils, ~ {
+   rr <- purrr::map(seuils, ~ {
     cc_moins <- max.col(mm<=.x, ties.method = "last")
     cc_plus <- max.col(mm>=.x, ties.method = "first")
     nnas <- !is.na(cc_moins)
@@ -38,7 +37,6 @@ iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
     out[nnas] [y_moins>=y_plus] <- NA   
     res <- raster::raster(isoraster)
     values(res) <- out
-    pb
     res
   })
   rr <- brick(rr)

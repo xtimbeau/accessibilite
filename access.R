@@ -3,10 +3,12 @@ message("Packages")
 # packages utilisés
 
 options("rgdal_show_exportToProj4_warnings" = "none")
+options(java.parameters =c("-Xmx24G"))
+gc()
 
 dvfpackages <- c(
   "raster", "sf", "tmap",
-  "patchwork",
+  "patchwork", "extrafont",
   "microbenchmark", "tictoc", "profvis",
   "skimr", "furrr", "data.table", "lobstr",
   "magrittr", "glue", "tidyverse"
@@ -38,7 +40,6 @@ message("{nbrOfWorkers()} workers" %>% glue())
 options(dplyr.summarise.inform = FALSE)
 rasterOptions(maxmemory = Inf, memfrac = 0.9)
 
-options(java.parameters = "-Xmx16G")
 rJava::.jinit()
 
 # fonctions utilisées
@@ -54,8 +55,7 @@ walk(
 # # calibri
 # font_import(prompt=FALSE)
 # loadfonts(device="win")
-
-# theme_update(text = element_text(family = "Calibri", size = 9))
+theme_update(text = element_text(family = "Calibri", size = 9))
 xgb_theme <- theme_minimal(base_size = 9, base_family = "Calibri")
 
 tmap_options(fontfamily = "Calibri")
@@ -73,8 +73,9 @@ red2gray <- colorspace::sequential_hcl(n = 50, h = c(15, 30), c = c(180, 90, 0),
 green2gray <- colorspace::sequential_hcl(n = 50, h = c(115, 115), c = c(180, 90, 0), l = c(35, 100), power = c(2.25, 2.25), register = "green2gray", rev = TRUE)
 blue2gray <- colorspace::sequential_hcl(n = 50, h = c(260, 220), c = c(180, 90, 0), l = c(30, 100), power = c(1.25, 1.25), register = "blue2gray", rev = TRUE)
 heatrg <- colorspace::sequential_hcl(n = 50, h = c(-50, 180), c = c(60, 180, 20), l = c(30, 100), power = c(0.7, 1.5), register = "heatrg", rev = TRUE)
-heatbg <- colorspace::sequential_hcl(n = 50, h = c(300, 200), c = c(150, 180, 0), l = c(25, 95), power = c(1, 2.5), register = "heatbg", rev = TRUE)
-heatvb <- colorspace::sequential_hcl(n = 50, h = c(280, 210), c = c(180, 90, 0), l = c(30, 95), power = c(1, 0.75), register = "heatvb", rev = TRUE)
+heatbg <- colorspace::sequential_hcl(n = 50, h = c(230, 80), c = c(110, 90, 60), l = c(25, 90), power = c(1, 1.2), register = "heatbg", rev = TRUE)
+heatrb <- colorspace::diverging_hcl(n = 50, h = c(260, 15), c = c(120, 180), l = c(25, 95), power = c(1, 1), register = "heatvb", rev = TRUE)
+heatgb <- colorspace::diverging_hcl(n = 50, h = c(200, 350), c = c(100, 80), l = c(50, 95), power = c(0.5, 1.5), register = "heatgb", rev = TRUE)
 
 tmap_options(max.raster = c(plot = 1e+9, view = 1e+9))
 

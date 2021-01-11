@@ -22,6 +22,7 @@ iso_accessibilite <- function(
   library("logger", quietly=TRUE)
   library("data.table", quietly=TRUE)
   library("magrittr", quietly=TRUE)
+  library("glue", quietly=TRUE)
   
   start_time <- Sys.time()
   
@@ -102,7 +103,9 @@ iso_accessibilite <- function(
     dir <- tempdir()
     purrr::walk(ou_gr,
                 ~file.remove(str_c(dir,"/", .x,".*")))
-    }
+  }
+  else
+    if (!dir.exists(dir)) dir.create(dir)
   
   message("...calcul des temps de parcours")
 
@@ -513,6 +516,11 @@ select_ancres <- function(s_ou, k, routing)
 ttm_on_closest <- function(ppou, s_ou, quoi, ttm_0, les_ou, tmax, routing, grdeou)
   {
     ss_ou <- s_ou[!(id%in%les_ou$id)] [closest==ppou]
+    null_result <- data.table(fromId=numeric(),
+                              toId=numeric(),
+                              travel_time=numeric(),
+                              npea=numeric(),
+                              npep=numeric())
     if(nrow(ss_ou)>0)
     {
       marge <- max(ss_ou[["tt"]])
@@ -527,27 +535,27 @@ ttm_on_closest <- function(ppou, s_ou, quoi, ttm_0, les_ou, tmax, routing, grdeo
         {
           log_warn("paquet:{grdeou} ppou:{ppou} ttm vide")
           log_warn("la matrice des distances et des opportunites (ttm) est vide")
-          return(NULL)
+          return(null_result)
         }
         else # ttm$error
         {
           log_warn("paquet:{grdeou} ppou:{ppou} ttm vide")
           log_warn("erreur {ttm$error}")
-          return(NULL)
+          return(null_result)
         }
       }
       else # cibles_ok lenght nulle
       {
         log_warn("paquet:{grdeou} ppou:{ppou} ttm vide")
         log_warn("pas de cibles")
-        return(NULL)
+        return(null_result)
       }
     }
     else # ss_ou vide
     {
       log_warn("paquet:{grdeou} ppou:{ppou} ttm vide")
       log_warn("pas d'origines")
-      return(NULL)
+      return(null_result)
     }
 }
 
@@ -660,7 +668,7 @@ access_on_groupe <- function(groupe, ou_4326, quoi_4326, routing, k, tmax, opp_v
                   ttm_on_closest(close, s_ou, quoi_4326, ttm_0, ttm_ou$les_ou, tmax, routing, groupe)
                 )
             )
-          ttm <- rbind(ttm_0[travel_time<=tmax], ttm[travel_time<=tmax])
+           ttm <- rbind(ttm_0[travel_time<=tmax], ttm[travel_time<=tmax])
         }
         else
           ttm <- ttm_0

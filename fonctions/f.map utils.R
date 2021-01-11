@@ -173,8 +173,8 @@ idINS3035 <- function(x, y=NULL, resolution=200, resinstr=TRUE)
     x <- x[,1]
   }
   resolution <- round(resolution)
-  x <- floor(x / resolution )*resolution
-  y <- floor(y / resolution )*resolution
+  x <-formatC(floor(x / resolution )*resolution, format="d")
+  y <-formatC(floor(y / resolution )*resolution, format="d")
   resultat <- if(resinstr)
     stringr::str_c("r", resolution, "N", y, "E", x)
   else 
@@ -265,7 +265,8 @@ r2dt <- function(raster, resolution=NULL, fun=mean)
   dt <- na.omit(data.table::melt(dt, measure.vars=vars), "value")
   dt <- data.table::dcast(dt, x+y~variable, value.var="value")
   dt[, idINS := idINS3035(x, y, resolution=base_res)]
-  data.table::setnames(dt, "idINS",str_c("idINS", base_res))
+  id <- str_c("idINS", base_res)
+  data.table::setnames(dt, "idINS",id)
   navars <- setdiff(vars, names(dt))
   rvars <- setdiff(vars, navars)
   if(!is.null(resolution))
@@ -276,6 +277,7 @@ r2dt <- function(raster, resolution=NULL, fun=mean)
   }
   if (length(navars)>0)
     dt[, (navars):=rep(list(rep(NA, nrow(dt))), length(navars))]
+  setkeyv(dt, cols=id)
   dt
 }
 
