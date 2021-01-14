@@ -211,7 +211,7 @@ tr_r5_avant_bus <- iso_accessibilite(
   resolution=200,      
   tmax=90,            
   pdt=5,               
-  routing=r5_ab, 
+  routing=r5_avb, 
   dir="{localdata}/trr5200avb" %>% glue)
 save_DVF(tr_r5_avant_bus)
 
@@ -225,7 +225,7 @@ tr_r5_avant_bus_50 <- iso_accessibilite(
   dir="{localdata}/trr550avb" %>% glue)
 save_DVF(tr_r5_avant_bus_50)
 
-tr_r5_apb <- routing_setup_r5(
+r5_apb <- routing_setup_r5(
   path="{localdata}/IDFM 2019.04.2",
   date = "29-04-2019 9:00:00",
   mode=c("WALK", "TRANSIT"),
@@ -233,6 +233,17 @@ tr_r5_apb <- routing_setup_r5(
   montecarlo = 30, 
   percentiles = 5L,
   n_threads = 8)
+
+tr_r5_apres_bus <- iso_accessibilite(
+  quoi=opp,            
+  ou=c200_idf,          
+  resolution=200,      
+  tmax=90,            
+  pdt=5,               
+  routing = r5_apb, 
+  dir="{localdata}/trr5200apb" %>% glue)
+
+save_DVF(tr_r5_apres_bus)
 
 tr_r5_apres_bus_50 <- iso_accessibilite(
   quoi=opp,            
