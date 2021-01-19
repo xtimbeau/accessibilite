@@ -33,7 +33,7 @@ rastervar <-
     quo_var <- rlang::enquos(...)
     idinspire <- getINSres(data,resolution=resolution,idINS=idINS)
     if (any(idinspire==FALSE))
-      idinspire <- idINS2point(data %>% st_as_sf, resolution=resolution)
+      idinspire <- idINS3035(st_coordinates(st_centroid(data %>% st_as_sf)), resolution=resolution)
     else
       idinspire <- data[[idinspire]] 
 
@@ -42,13 +42,13 @@ rastervar <-
         dplyr::transmute(!!rlang::quo_name(.x) := !!.x)})
 
     data.table::setDT(data.temp)
-    vars <- data.table::set_names(names(data.temp))
+    vars <- set_names(names(data.temp))
     isnum <- purrr::map_lgl(data.temp, is.numeric)
     data.temp <- data.temp[, lapply(.SD, factor2num)]
-    obs_na <- purrr::map(vars, ~is.na(data.temp[[.x]]))
-    obs_drop <- purrr::reduce(obs_na,and)
-    
-    data.temp <- data.temp[!obs_drop, idINS:=idinspire]
+    obs_na <- purrr::map(data.temp, ~is.na(.x))
+    obs_drop <- purrr::reduce(obs_na, `&`)
+    data.temp[, idINS := idinspire]
+    data.temp <- data.temp[!obs_drop]
     
     if (dropth>0) 
       for(v in vars(isnum)) 
@@ -188,7 +188,7 @@ idINS3035 <- function(x, y=NULL, resolution=200, resinstr=TRUE)
 raster_ref <- function(data, resolution=200, crs=3035) 
 {
   alignres <- max(resolution, 200)
-  if("sf"%in%class(data))
+  if(checkmate::testMultiClass(data,c("sf", "sfc")))
   {
     b <- sf::st_bbox(data)
     crss <- sf::st_crs(data)$proj4string

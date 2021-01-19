@@ -44,13 +44,9 @@ rJava::.jinit()
 
 # fonctions utilisées
 message("Sources")
-
-walk(
-  list.files("./fonctions"),
-  ~ source(str_c("./fonctions/", .x),
-    encoding = "UTF-8"
-  )
-)
+walk(list.files("./fonctions", pattern="\\.[Rr]$"),
+     ~source(str_c("./fonctions/", .x), 
+             encoding="UTF-8"))
 
 # # calibri
 # font_import(prompt=FALSE)

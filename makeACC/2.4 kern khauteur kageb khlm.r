@@ -22,28 +22,26 @@ plan("multiprocess", workers=8)
 
 # hauteur des immeubles du voisinage ------------------
 
-batiments.ff2019 <- vroom("{DVFdata}/rda/csv sources/batiments.ff2019.csv" %>% glue, 
-                          col_types = cols_only(idbat="c", dnbniv="d",
+bff <- vroom::vroom("{DVFdata}/rda/csv sources/batiments.ff2019.csv" %>% glue, 
+                          col_types = cols_only(idbat="c", dnbniv="d", jannatmaxh="d",
                                                 stoth="d", stotdsueic="d", stotd="d", slocal="d",
                                                 sprincp="d", ssecp="d", sparkp="d",sparkncp="d",
+                                                nlogh="d", nloghlm="d",
                                                 X="d", Y="d")) %>% 
-  lazy_dt()
-
-batiments.ff2019 %<>%
-  mutate(parth = (stoth+stotdsueic+stotd)/slocal,
+   mutate(parth = (stoth+stotdsueic+stotd)/slocal,
          partp = (sprincp+ssecp)/slocal,
-         partpk = (sparkp+sparkncp)/slocal) %>%
+         partpk = (sparkp+sparkncp)/slocal,
+         hlm = ifelse(nlogh>0,nloghlm, 0),
+         nlogh = nlogh) %>%
   as_tibble() %>% 
   drop_na(X,Y) %>% 
-  filter(dnbniv>0) %>% 
   st_as_sf(coords=c("X", "Y"), crs=2154) %>% 
   st_transform(3035) %>% 
-  mutate(r = sqrt(slocal/dnbniv/pi))
+  select(dnbniv, ageb = jannatmaxh, hlm, nlogh) %>% 
+  mutate(cste = 1, ageb = ifelse(ageb>0&ageb<2019, 2019-ageb, NA))
 
 hauteurs <- iso_accessibilite(
-  quoi = batiments.ff2019 %>% 
-    select(dnbniv) %>% 
-    mutate(cste = 1),
+  quoi = bff ,
   ou=c200_idf,
   resolution=50,
   res_quoi=50,
@@ -52,5 +50,9 @@ hauteurs <- iso_accessibilite(
   routing=fdt_idf_50)
 
 khauteurs <- hauteurs$dnbniv/hauteurs$cste
+kageb <- hauteurs$ageb/hauteurs$cste
+khlm <- hauteurs$hlm/hauteurs$nlogh
 
 save_DVF(khauteurs)
+save_DVF(kageb)
+save_DVF(khlm)

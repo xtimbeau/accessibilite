@@ -16,7 +16,7 @@ iso_accessibilite <- function(
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE, 
   logs = localdata,
-  dir=NULL,
+  dir= NULL,
   table2disk=if(!is.null(dir)) TRUE else FALSE)                        # ne recalcule pas les groupes déjà calculés, attention !  
 {
   library("logger", quietly=TRUE)
@@ -79,7 +79,7 @@ iso_accessibilite <- function(
     resolution=resolution)
   
   ou_4326 <- ouetquoi$ou_4326
-  quoi_4326 <- ouetquoi$quoi_4326
+  quoi_4326 <- ouetquoi$quoi_4326                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              <- ouetquoi$quoi_4326
   
   npaires_brut <- as.numeric(nrow(quoi_4326))*as.numeric(nrow(ou_4326))
   
@@ -98,14 +98,15 @@ iso_accessibilite <- function(
   log_success("{f2si2(nrow(ou_4326))} ou, {f2si2(nrow(quoi_4326))} quoi")
   log_success("{length(ou_gr)} carreaux, {k} subsampling")
   
-  if(table2disk & is.null(dir)) 
-  {
-    dir <- tempdir()
-    purrr::walk(ou_gr,
-                ~file.remove(str_c(dir,"/", .x,".*")))
-  }
+  if(table2disk)
+    if(is.null(dir))
+      {
+      dir <- tempdir()
+      purrr::walk(ou_gr, ~file.remove(str_c(dir,"/", .x,".*")))
+      }
   else
-    if (!dir.exists(dir)) dir.create(dir)
+    if (!dir.exists(dir))
+      dir.create(dir)
   
   message("...calcul des temps de parcours")
 
@@ -270,7 +271,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
         st_drop_geometry() %>% 
         as.data.frame() %>%
         as.data.table()
-      qag <- qag[, id:=qins] [, lapply(.SD, sum), by=id, .SDcols=opp_var]
+      qag <- qag[, id:=qins] [, lapply(.SD, function(x) sum(x, na.rm=TRUE)), by=id, .SDcols=opp_var]
       qag[, geometry:=idINS2square(qag$id, resolution=res_quoi)]
       quoi <- st_as_sf(qag) 
       }
@@ -283,7 +284,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
         purrr::map(
           opp_var,
           ~{
-            if(st_agr(quoi)[[.x]]=="constant")
+            if(!is.na(st_agr(quoi)[[.x]])&st_agr(quoi)[[.x]]=="constant")
               {
               fonction <- mean
               facteur <- 1
@@ -313,19 +314,20 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
     quoi_3035 <- data.table(rr_3035 %>% as.data.frame(),
                             x=xy_3035[,1] %>% round(), 
                             y=xy_3035[,2]%>% round())
-    quoi_4326 <- quoi_3035 %>% as.data.table
+    quoi_4326 <- quoi_3035 %>%
+      as.data.table()
     keep <- purrr::reduce(
       purrr::map(opp_var, ~{
       xx <- quoi_4326[[.x]]
       (!is.na(xx))&(xx!=0)}),
-      and)
+      `|`)
     quoi_4326 <- quoi_4326[keep,]
     xy_3035 <-quoi_4326[, .(x,y)] %>% as.matrix
     xy_4326 <- sf_project(xy_3035, from = st_crs(3035), to = st_crs(4326))
     rm(rr_3035)
     gc()
   }
-  else
+  else # !point ou finite(resquoi)
   {
     xy_3035 <- st_coordinates(quoi %>% st_transform(3035))
     xy_4326 <- st_coordinates(quoi %>% st_transform(4326))
@@ -362,7 +364,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
     {
       # pas de points mais une résolution, on crée la grille
       ou_3035 <- ou %>% st_transform(3035)
-      rr_3035 <- fasterize(ou_3035, raster_ref(ou_3035, res_ou), fun = "any")
+      rr_3035 <- fasterize(ou_3035 %>% st_sf(), raster_ref(ou_3035, res_ou), fun = "any")
       xy_3035 <- xyFromCell(rr_3035, which(raster::values(rr_3035) == 1))
       xy_4326 <- sf_project(xy_3035, from = st_crs(3035), to = st_crs(4326))
       ou_4326 <- data.table(lon = xy_4326[, 1],

@@ -5,7 +5,9 @@ library("tidytransit")
 idfm <- read_gtfs("{localdata}/IDFM 2020/gtfs STIF 2020 12.zip" %>% glue)
 rerd <- get_line(route_id = "800:D", idfm)
 colD <- str_c("#", rerd$route_color[[1]])
-dline <- tm_shape(rerd)+tm_lines(col=colD, alpha=0.5)+tm_dots(col=colD, size=0.05)
+dline <- tm_shape(rerd)+
+  tm_lines(col=colD, alpha=0.5, size=0.1, lwd=0.5)+
+  tm_dots(col="black", shape=21, size=0.25, border.col="white", border.lwd = 0.5)
 uu851 <- load_DVF("uu851")
 c200 <- load_DVF("c200")
 setDT(c200)
@@ -15,8 +17,8 @@ seuils <- c(50,1000)*1000
 
 # réforme du RER D -------------------
 
-t1 <- iso2time(load_DVF("tr_r5_Dav")$EMP09, seuils)
-t2 <- iso2time(load_DVF("tr_r5_Dap")$EMP09, seuils)
+t1 <- iso2time(lload_DVF("tr_r5_Dav")$EMP09, seuils)
+t2 <- iso2time(lload_DVF("tr_r5_Dap")$EMP09, seuils)
 mm50 <- uu851$fdc+tm_shape((t1-t2)$to50k)+tm_raster(style="cont", palette="RdBu")+dline+uu851$hdc
 mm1000 <- uu851$fdc+tm_shape((t1-t2)$to1M)+tm_raster(style="cont", palette="RdBu")+dline+uu851$hdc
 graph2svg(mm50, "{DVFdata}/presentation/GTFS/rerd map 50k")
@@ -34,8 +36,14 @@ idf <- ggplot(ttm, aes(x=temps, y=after_stat(mass), mass=Ind, fill=rerD, col=rer
 graph2svg(idf, "{DVFdata}/presentation/GTFS/rerd massity", textratio=1.5)
 
 dd <- disichrone(tt, dist=to50k, mass=Ind, by=rerD)
-dd <- dd %>% pivot_wider(id_cols=to50k, names_from = rerD, values_from = Ind) %>% mutate(delta=après-avant) 
-dif <- ggplot()+geom_line(data=dd, aes(x=to50k, y=delta))
+dd <- dd %>% 
+  pivot_wider(id_cols=to50k, names_from = rerD, values_from = Ind) %>% 
+  mutate(delta=après-avant) %>% 
+  arrange(to50k) %>% 
+  mutate(dc = cumsum(delta))
+dif <- ggplot()+geom_line(data=dd, aes(x=round(to50k), y=dc))
+dif <- ggplot(tt)+geom_histogram( aes(x=to50k, y=..density.., weight=Ind), binwidth=1)
+
 graph2svg(dif,"{DVFdata}/presentation/GTFS/diff rerd massity" , textratio=1.5)
 
 # changement des bus -------------------
@@ -71,8 +79,12 @@ graph2svg(mm1000, "{DVFdata}/presentation/GTFS/reforme des bus map 1M")
 
 # r5 5% versus medianne -------------------------
 
-t1 <- iso2time(load_DVF("tr_r5_2020_median")$EMP09, seuils)
-t2 <- iso2time(load_DVF("tr_r5_2020")$EMP09, seuils)
+# ddta <- iso2time(load_DVF("tr_r5_2020_median")$EMP09, seuils)-iso2time(load_DVF("tr_r5_2020")$EMP09, seuils)
+# ddtb <- iso2time(lload_DVF("tr_r5_2020_median")$EMP09, seuils)-iso2time(lload_DVF("tr_r5_2020")$EMP09, seuils)
+# tm_shape(ddta-ddtb)+tm_raster(style="cont", palette="RdBu")
+
+t1 <- iso2time(lload_DVF("tr_r5_2020_median")$EMP09, seuils)
+t2 <- iso2time(lload_DVF("tr_r5_2020")$EMP09, seuils)
 tt <- rbind(r2dt(t1, 200)[, r5:="médianne"], r2dt(t2, 200)[, r5:="5%"])
 mm50 <- uu851$fdc+tm_shape((t1-t2)$to50k)+tm_raster(style="cont", palette=red2gray)+uu851$hdc
 mm1000 <- uu851$fdc+tm_shape((t1-t2)$to1M)+tm_raster(style="cont", palette=red2gray)+uu851$hdc
@@ -95,7 +107,7 @@ idf <- ggplot(ttm, aes(x=temps, y=after_stat(mass), mass=Ind, col=dep, fill=dep)
   scale_y_continuous(labels=uf2si2)+
   xlab("temps (minutes)")+ylab("Population/m")+
   facet_wrap(~seuil)
-graph2svg(idf, "{DVFdata}/presentation/GTFS/median versus 5% delta massity", textratio=2)
+graph2svg(idf, "{DVFdata}/presentation/GTFS/medianne versus 5% delta massity", textratio=2)
 
 # r5r draws -------------------------
 
@@ -147,8 +159,8 @@ t2018 <- iso2time(load_DVF("tr_r5_2018")$EMP09, seuils)
 t2017 <- iso2time(load_DVF("tr_r5_2017")$EMP09, seuils)
 b1 <- brick(t2019$to50k-t2020$to50k, t2018$to50k-t2020$to50k, t2017$to50k-t2020$to50k)
 b2 <- brick(t2019$to1M-t2020$to1M, t2018$to1M-t2020$to1M, t2017$to1M-t2020$to1M)
-names(b1) <- c("y2019","y2018","y2017")
-names(b2) <- c("y2019","y2018","y2017")
+names(b1) <- c("d(2019-2020)","d(2018-2020)","d(2017-2020)")
+names(b2) <- names(b1)
 mm50 <- uu851$fdc+tm_shape(b1)+tm_raster(style="cont", palette="RdBu")+uu851$hdc
 mm1000 <- uu851$fdc+tm_shape(b2)+tm_raster(style="cont", palette="RdBu")+uu851$hdc
 
@@ -161,7 +173,6 @@ idf <- ggplot(tt, aes(x=y2017, y=after_stat(mass), mass=Ind, col=dep, fill=dep))
   scale_y_continuous(labels=uf2si2)+
   xlab("temps (minutes)")+ylab("Population/m")
 graph2svg(idf, "{DVFdata}/presentation/GTFS/2017-2020 massity", textratio=2)
-
 
 # r5 transit, bus, rail --------------------------
 

@@ -11,15 +11,17 @@ c200_75 <- c200 %>% filter(dep=="75")
 c200_mtrl <- c200 %>% filter(Depcom=="93048")
 rm(c200)
 
-plan(multisession, workers=8)
+plan(multisession, workers=16)
+
+# lancer le docker correspondant
 foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
 
 fdt_idf_50 <- iso_accessibilite(
   quoi = idf4km %>% st_sf() %>% transmute(c=1),
-  ou = c200_idf,
+  ou = idf,
   resolution=res,
   routing=foot_osrm,
-  tmax=30,
+  tmax=20,
   ttm_out = TRUE, 
   future=TRUE,
   dir="{localdata}/osrm_foot_45_50" %>% glue)

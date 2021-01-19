@@ -21,7 +21,10 @@ fdt_idf_50 <- load_DVF("fdt_idf_50") %>% swap2tmp_routing()
 plan("multiprocess", workers=8)
 
 # population -> POP et PAUV ------------------------------------
-
+c200_idf <- c200_idf %>% 
+  select(Ind, Men, Men_pauv) %>% 
+  mutate(cste = 1) %>% 
+  st_agr_aggregate(Ind, Men, Men_pauv, cste)
 pop <- iso_accessibilite(
   quoi=c200_idf %>% 
     select(Ind, Men, Men_pauv) %>% 
@@ -31,6 +34,7 @@ pop <- iso_accessibilite(
   tmax=20,                         
   pdt=1,                          
   routing=fdt_idf_50)
+
 pop200 <- map(pop, ~aggregate(.x, 4))
 densite <- r2dt(pop200$Ind/pop200$cste/0.04)
 txpauv <- r2dt(pop200$Men_pauv/pop200$Ind)
@@ -38,4 +42,3 @@ txpauv <- r2dt(pop200$Men_pauv/pop200$Ind)
 popisokernel <- merge(densite[,-c("x","y")], txpauv[,-c("x","y")], by="idINS200", suffix=c(".densite", ".txpauv"))
 
 save_DVF(popisokernel)
-

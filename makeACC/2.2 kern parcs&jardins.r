@@ -25,13 +25,13 @@ plan("multiprocess", workers=8)
 
 # parcs et jardins
 
-jardins <- st_read("{DVFdata}//fdCartes//espaces verts//espaces verts.shp" %>%  glue) %>%
+jardins <- st_read("{DVFdata}/sources/fdCartes//espaces verts//espaces verts.shp" %>%  glue) %>%
   st_transform(3035) %>% 
   mutate(area=as.numeric(st_area(.)))
 
 kfoot_jardins_50 <- iso_accessibilite(
   quoi = jardins %>% select(area),
-  ou=c200_idf,
+    ou=idf,
   resolution=50,
   tmax=20,
   pdt=1,
@@ -43,7 +43,7 @@ save_DVF(kfoot_jardins_50)
 
 # ecomos
 
-ecomos <- st_read("{DVFdata}/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
+ecomos <- st_read("{DVFdata}/sources/fdcartes/ecomos/ecomos-idf.shp" %>% glue) %>% st_transform(3035)
 ecomos_idf <- ecomos %>%
   mutate(area=as.numeric(st_area(ecomos))) %>% 
   filter(str_sub(clc6_tx,1,3)%in%c("231", "311")) %>%
@@ -52,7 +52,7 @@ ecomos_idf <- ecomos %>%
 
 kfoot_ecomos_50 <- iso_accessibilite(
   quoi = ecomos_idf %>% select(area),
-  ou=c200_idf,
+  ou=idf,
   resolution=50,
   tmax=20,
   pdt=1,
@@ -74,7 +74,7 @@ CORINE_idf <- CORINE_fr %>%
 
 kfoot_corine_50 <- iso_accessibilite(
   quoi = CORINE_idf %>% select(area, c),
-  ou=c200_idf,
+  ou=idf,
   resolution=50,
   tmax=20,
   pdt=1,

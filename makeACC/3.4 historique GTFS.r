@@ -20,9 +20,9 @@ threads <- 8
 
 # https://openmobilitydata.org/p/stif/822?p=8
 
-# référence 2020 (résolution 50) ----------------------
+# référence 2020 (50m) ----------------------
 
-tr_r5_20 <- routing_setup_r5(
+r5_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
   date = "14-12-2020 9:00:00",
   mode=c("WALK", "TRANSIT"),
@@ -31,18 +31,49 @@ tr_r5_20 <- routing_setup_r5(
   percentiles = 5L,
   n_threads = 8)
 
-tr_r5_2020 <- iso_accessibilite(
+tr_r550_2020 <- iso_accessibilite(
+  quoi=opp,            
+  ou=c200_idf,          
+  resolution=50,      
+  tmax=90,            
+  pdt=5,               
+  routing=r5_20, 
+  dir="{localdata}/trr550_2020" %>% glue)
+
+save_DVF(tr_r550_2020)
+
+# GPE (50m&200m) ----------------------
+
+r5_GPE <- routing_setup_r5(
+  path="{localdata}/IDFM 2020 GPE",
+  date = "14-12-2020 9:00:00",
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 30, 
+  percentiles = 5L,
+  n_threads = 8)
+
+tr_r5_GPE_50 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=50,      
   tmax=90,            
   pdt=5,               
   routing=tr_r5_20, 
-  dir="{localdata}/trr550_2020" %>% glue)
+  dir="{localdata}/trr550_GPE" %>% glue)
+save_DVF(tr_r5_GPE_50)
 
-save_DVF(tr_r5_2020)
+tr_r5_GPE <- iso_accessibilite(
+  quoi=opp,            
+  ou=c200_idf,          
+  resolution=200,      
+  tmax=90,            
+  pdt=5,               
+  routing=tr_r5_20, 
+  dir="{localdata}/trr5200_GPE" %>% glue)
+save_DVF(tr_r5_GPE)
 
-# référence 2020 (points DV3F) ----------------------
+# référence 2020 (points DV3F 50m) ----------------------
 dv3f <- load_DVF("dv3fv41")
 pts <- dv3f %>%
   st_geometry() %>% 
@@ -72,7 +103,7 @@ tr_r5_2020_dvf <- iso_accessibilite(
 save_DVF(tr_r5_2020_dvf)
 
 
-# cartes pour différentes années (résolution 200) ---------------
+# cartes pour différentes années (200m) ---------------
 
 tr_r5_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
@@ -154,7 +185,7 @@ tr_r5_2017 <- iso_accessibilite(
 
 save_DVF(tr_r5_2017)
 
-# refonte du RER D le 10 décembre 2018 ----------------
+# refonte du RER D le 10 décembre 2018 50m&200m ----------------
 
 r5_Dav <- routing_setup_r5(
   path="{localdata}/IDFM 2018.10",
@@ -175,6 +206,16 @@ tr_r5_Dav <- iso_accessibilite(
   dir="{localdata}/trr5200Dav" %>% glue)
 save_DVF(tr_r5_Dav)
 
+tr_r5_Dav_50 <- iso_accessibilite(
+  quoi=opp,            
+  ou=c200_idf,          
+  resolution=200,      
+  tmax=90,            
+  pdt=5,               
+  routing=r5_Dav, 
+  dir="{localdata}/trr550Dav" %>% glue)
+save_DVF(tr_r5_Dav_50)
+
 r5_Dap <- routing_setup_r5(
   path="{localdata}/IDFM 2019.02",
   date = "25-02-2019 9:00:00",
@@ -194,7 +235,17 @@ tr_r5_Dap <- iso_accessibilite(
   dir="{localdata}/trr5200DaP" %>% glue)
 save_DVF(tr_r5_Dap)
 
-# refonte des lignes de bus le 20 avril 2019 ----------------
+tr_r5_Dap_50 <- iso_accessibilite(
+  quoi=opp,            
+  ou=c200_idf,          
+  resolution=50,      
+  tmax=90,            
+  pdt=5,               
+  routing=r5_Dap, 
+  dir="{localdata}/trr5200DaP" %>% glue)
+save_DVF(tr_r5_Dap_50)
+
+# refonte des lignes de bus le 20 avril 2019 50m&200m ----------------
 
 r5_avb <- routing_setup_r5(
   path="{localdata}/IDFM 2019.04",
@@ -251,12 +302,12 @@ tr_r5_apres_bus_50 <- iso_accessibilite(
   resolution=50,      
   tmax=90,            
   pdt=5,               
-  routing = tr_r5_apb, 
+  routing = r5_apb, 
   dir="{localdata}/trr550apb" %>% glue)
 
 save_DVF(tr_r5_apres_bus_50)
 
-# BUS RAIL vs TRANSIT ---------------------------
+# BUS RAIL vs TRANSIT 200m ---------------------------
 
 rail_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
@@ -296,7 +347,7 @@ bus_r5_2020_200 <- iso_accessibilite(
   dir="{localdata}/busr5200_2020" %>% glue)
 save_DVF(bus_r5_2020_200)
 
-# POP c200 versus POP IRIS ----------------------
+# POP c200 versus POP IRIS 200m ----------------------
 
 tr_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
@@ -323,7 +374,7 @@ popc200_2020 <- iso_accessibilite(
 
 save_DVF(popc200_2020)
 
-# medianne au lieu de 5% --------------------
+# medianne au lieu de 5% 200m --------------------
 
 r5_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
@@ -344,7 +395,7 @@ tr_r5_2020_median <- iso_accessibilite(
   dir="{localdata}/trr5200_2020_median" %>% glue)
 save_DVF(tr_r5_2020_median)
 
-# 20 draws versus 120  --------------------
+# 20 draws versus 120 200m --------------------
 
 r5_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
