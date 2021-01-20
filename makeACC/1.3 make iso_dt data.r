@@ -11,7 +11,7 @@ c200_75 <- c200 %>% filter(dep=="75")
 c200_mtrl <- c200 %>% filter(Depcom=="93048")
 rm(c200)
 
-plan(multisession, workers=16)
+plan(multisession, workers=8)
 
 # lancer le docker correspondant
 foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
