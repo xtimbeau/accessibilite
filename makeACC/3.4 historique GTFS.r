@@ -35,8 +35,7 @@ tr_r550_2020 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=50,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,              
   routing=r5_20, 
   dir="{localdata}/trr550_2020" %>% glue)
 
@@ -57,8 +56,7 @@ tr_r5_GPE_50 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=50,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_r5_20, 
   dir="{localdata}/trr550_GPE" %>% glue)
 save_DVF(tr_r5_GPE_50)
@@ -67,20 +65,14 @@ tr_r5_GPE <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_r5_20, 
   dir="{localdata}/trr5200_GPE" %>% glue)
 save_DVF(tr_r5_GPE)
 
-# référence 2020 (points DV3F 50m) ----------------------
-dv3f <- load_DVF("dv3fv41")
-pts <- dv3f %>%
-  st_geometry() %>% 
-  st_coordinates() %>% 
-  unique() %>%
-  as.data.frame() %>% 
-  st_as_sf(coords=c("X", "Y"), crs=3035)
+# référence 2020 (points DV3F) ----------------------
+dv3f <- lload_DVF("dv3f.c3035.u") %>%
+  st_as_sf(coords=c("x", "y"), crs=3035)
   
 tr_r5_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
@@ -93,11 +85,11 @@ tr_r5_20 <- routing_setup_r5(
 
 tr_r5_2020_dvf <- iso_accessibilite(
   quoi=opp,            
-  ou=pts,      
+  ou=dv3f,      
   tmax=120,            
   pdt=5,               
   routing=tr_r5_20, 
-  dir="{localdata}/trr550_2020_dvf" %>% glue,
+  dir="{localdata}/trr550_2020_dvf3" %>% glue,
   out="data.table")
 
 save_DVF(tr_r5_2020_dvf)
@@ -118,8 +110,7 @@ tr_r5_2020 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_r5_20, 
   dir="{localdata}/trr5200_2020" %>% glue)
 
@@ -138,8 +129,7 @@ tr_r5_2019 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_r5_19, 
   dir="{localdata}/trr5200_2019" %>% glue)
 
@@ -158,8 +148,7 @@ tr_r5_2018 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_r5_18, 
   dir="{localdata}/trr5200_2018" %>% glue)
 
@@ -178,8 +167,7 @@ tr_r5_2017 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_r5_17, 
   dir="{localdata}/trr5200_2017" %>% glue)
 
@@ -200,8 +188,7 @@ tr_r5_Dav <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_Dav, 
   dir="{localdata}/trr5200Dav" %>% glue)
 save_DVF(tr_r5_Dav)
@@ -210,8 +197,7 @@ tr_r5_Dav_50 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_Dav, 
   dir="{localdata}/trr550Dav" %>% glue)
 save_DVF(tr_r5_Dav_50)
@@ -229,8 +215,7 @@ tr_r5_Dap <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_Dap, 
   dir="{localdata}/trr5200DaP" %>% glue)
 save_DVF(tr_r5_Dap)
@@ -239,8 +224,7 @@ tr_r5_Dap_50 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=50,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_Dap, 
   dir="{localdata}/trr5200DaP" %>% glue)
 save_DVF(tr_r5_Dap_50)
@@ -260,8 +244,7 @@ tr_r5_avant_bus <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_avb, 
   dir="{localdata}/trr5200avb" %>% glue)
 save_DVF(tr_r5_avant_bus)
@@ -270,8 +253,7 @@ tr_r5_avant_bus_50 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=50,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_avb, 
   dir="{localdata}/trr550avb" %>% glue)
 save_DVF(tr_r5_avant_bus_50)
@@ -289,8 +271,7 @@ tr_r5_apres_bus <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing = r5_apb, 
   dir="{localdata}/trr5200apb" %>% glue)
 
@@ -300,8 +281,7 @@ tr_r5_apres_bus_50 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=50,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing = r5_apb, 
   dir="{localdata}/trr550apb" %>% glue)
 
@@ -322,8 +302,7 @@ rail_r5_2020_200 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=rail_20, 
   dir="{localdata}/railr5200_2020" %>% glue)
 save_DVF(rail_r5_2020_200)
@@ -341,8 +320,7 @@ bus_r5_2020_200 <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=bus_20, 
   dir="{localdata}/busr5200_2020" %>% glue)
 save_DVF(bus_r5_2020_200)
@@ -367,8 +345,7 @@ popc200_2020 <- iso_accessibilite(
   quoi=c200_idf10k,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=tr_20, 
   dir="{localdata}/trr5200_2020_c200" %>% glue)
 
@@ -389,8 +366,7 @@ tr_r5_2020_median <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_20, 
   dir="{localdata}/trr5200_2020_median" %>% glue)
 save_DVF(tr_r5_2020_median)
@@ -410,8 +386,7 @@ tr_r5_2020_20d <- iso_accessibilite(
   quoi=opp,            
   ou=c200_idf,          
   resolution=200,      
-  tmax=90,            
-  pdt=5,               
+  tmax=90,             
   routing=r5_20, 
   dir="{localdata}/trr5200_2020_20d" %>% glue)
 save_DVF(tr_r5_2020_20d)
@@ -429,8 +404,7 @@ tr_r5_2020_120d <- iso_accessibilite(
   quoi=opp,
   ou=c200_idf, 
   resolution=200,
-  tmax=90,     
-  pdt=5, 
+  tmax=90, 
   routing=r5_20, 
   dir="{localdata}/trr5200_2020_120d" %>% glue)
 save_DVF(tr_r5_2020_120d)

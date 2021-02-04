@@ -13,6 +13,45 @@ opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
 threads <- 8
+
+# Resolution dvf (r5 et osrm) ---------------------
+dv3f <- lload_DVF("dv3f.c3035.u") %>%
+  st_as_sf(coords=c("x", "y"), crs=3035)
+
+tr_r5_20 <- routing_setup_r5(
+  path="{localdata}/IDFM 2020",
+  date = "14-12-2020 9:00:00",
+  mode=c("WALK", "TRANSIT"),
+  time_window=60,
+  montecarlo = 30, 
+  percentiles = 5L,
+  n_threads = 8)
+
+tr_r5_2020_dvf <- iso_accessibilite(
+  quoi=opp,            
+  ou=dv3f,      
+  tmax=120,            
+  routing=tr_r5_20, 
+  dir="{localdata}/trr5dvf_2020" %>% glue,
+  out="data.table")
+
+save_DVF(tr_r5_2020_dvf)
+
+plan("multiprocess", workers=8)
+car_osrm <- routing_setup_osrm(server="5003", profile="driving")
+dv3f <- lload_DVF("dv3f.c3035.u") %>%
+  st_as_sf(coords=c("x", "y"), crs=3035)
+
+iso_car_dvf_osrm <- iso_accessibilite(
+  quoi=opp,                       
+  ou=dv3f,                           
+  tmax=120,                       
+  routing=car_osrm,
+  dir="{localdata}/carosrmdvf_2020" %>% glue,
+  out="data.table")
+
+save_DVF(iso_car_50_osrm_dvf, rep="rda")
+
 # resolution 50 -------------------
 
 ## transit r5 ----------------------
@@ -164,6 +203,7 @@ plan("multiprocess", workers=8)
 car_osrm <- routing_setup_osrm(server="5003", profile="driving")
 foot_osrm <- routing_setup_osrm(server="5002", profile="walk")
 
+# resolution 50m
 iso_car_50_osrm_idf <- iso_accessibilite(
   quoi=opp,                       
   ou=c200_idf,                       
@@ -174,22 +214,33 @@ iso_car_50_osrm_idf <- iso_accessibilite(
 
 save_DVF(iso_car_50_osrm_idf, rep="rda")               
 
+# resolution 200m
+iso_car_50_osrm_idf2 <- iso_accessibilite(
+  quoi=opp,                       
+  ou=c200_idf,                       
+  resolution=200,                    
+  tmax=120,                         
+  pdt=5,                          
+  routing=car_osrm)
+
+save_DVF(iso_car_50_osrm_idf, rep="rda")               
+       
 tcarosrm_emp09 <- iso2time(iso_car_50_osrm_idf$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
 save_DVF(tcarosrm_emp09)
 
-# réunion des rasters par departement
-
-isos_car <- map(depIdf, ~load_DVF("iso75/isocar50osrmd{.x}"))
-
-iso_car_50_osrm <-list(
-  EMP09 = do.call(raster::merge, map(isos_car, "EMP09")),
-  P15_POP = do.call(raster::merge, map(isos_car, "P15_POP")),
-  cste = do.call(raster::merge, map(isos_car, "cste")))
-
-names(iso_car_50_osrm$EMP09) <- names(isos_car[[1]]$EMP09)
-names(iso_car_50_osrm$P15_POP) <- names(isos_car[[1]]$P15_POP)
-names(iso_car_50_osrm$cste) <- names(isos_car[[1]]$cste)
-save_DVF(iso_car_50_osrm)
-
-tcarosrm_emp09 <- iso2time(iso_car_50_osrm$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
-save_DVF(tcarosrm_emp09)
+# # réunion des rasters par departement
+# 
+# isos_car <- map(depIdf, ~load_DVF("iso75/isocar50osrmd{.x}"))
+# 
+# iso_car_50_osrm <-list(
+#   EMP09 = do.call(raster::merge, map(isos_car, "EMP09")),
+#   P15_POP = do.call(raster::merge, map(isos_car, "P15_POP")),
+#   cste = do.call(raster::merge, map(isos_car, "cste")))
+# 
+# names(iso_car_50_osrm$EMP09) <- names(isos_car[[1]]$EMP09)
+# names(iso_car_50_osrm$P15_POP) <- names(isos_car[[1]]$P15_POP)
+# names(iso_car_50_osrm$cste) <- names(isos_car[[1]]$cste)
+# save_DVF(iso_car_50_osrm)
+# 
+# tcarosrm_emp09 <- iso2time(iso_car_50_osrm$EMP09, seuils=c(25000,50000,750000,100000,250000,500000,1000000,2000000,3000000,4000000))
+# save_DVF(tcarosrm_emp09)

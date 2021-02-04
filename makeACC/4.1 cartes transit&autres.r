@@ -6,8 +6,8 @@ idfm <- read_gtfs("{localdata}/IDFM 2020/gtfs STIF 2020 12.zip" %>% glue)
 rerd <- get_line(route_id = "800:D", idfm)
 colD <- str_c("#", rerd$route_color[[1]])
 dline <- tm_shape(rerd)+
-  tm_lines(col=colD, alpha=0.5, size=0.1, lwd=0.5)+
-  tm_dots(col="black", shape=21, size=0.25, border.col="white", border.lwd = 0.5)
+  tm_lines(col=colD, alpha=0.5, size=0.1, lwd=3)+
+  tm_dots(col="black", shape=21, size=0.5, border.col="white", border.lwd = 2)
 uu851 <- load_DVF("uu851")
 c200 <- load_DVF("c200")
 setDT(c200)
