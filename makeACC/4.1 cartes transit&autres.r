@@ -15,6 +15,24 @@ setkey(c200, "idINS200")
 c200 <- c200[,.(idINS200, Ind, dep)]
 seuils <- c(50,1000)*1000
 
+# cartes des transports
+rers <- map(idfm$routes %>% filter(route_type==2, route_id!="800:TER") %>% pull(route_id), ~get_line(.x, idfm))
+rers_maps <- map(rers, ~{
+  col <- str_c("#", .x$route_color[[1]])
+  tm_shape(.x)+
+    tm_lines(col=col, alpha=0.5, size=0.05, lwd=1)
+})
+                 
+idf <- load_DVF("iris15") %>% filter(UU2010=="00851") %>% st_union()
+c200_idf <- load_DVF("c200") %>% filter(st_within(., idf, sparse=FALSE))
+dens_idf <- c200[ dep %in% depIdf, ] [, Ind:=Ind/0.04] %>% dt2r(resolution = 200)
+dens_rer <- tm_shape(idf)+tm_fill(col="grey95")+tm_shape(dens_idf)+tm_raster(style="kmeans", palette=green2gray, alpha=1, title="Resident/km²", n=8)+
+  rers_maps[[1]]+rers_maps[[2]]+rers_maps[[3]]+rers_maps[[4]]+rers_maps[[5]]+rers_maps[[6]]+
+  rers_maps[[7]]+rers_maps[[8]]+rers_maps[[9]]+rers_maps[[10]]+rers_maps[[11]]+rers_maps[[12]]+rers_maps[[13]]+
+  tm_shape(idf)+tm_borders()
+tmap_mode("plot")
+tmap_save(dens_rer, "Densité et rer.svg", width = 24, height = 16, units="cm")
+
 # réforme du RER D -------------------
 
 t1 <- iso2time(lload_DVF("tr_r5_Dav")$EMP09, seuils)

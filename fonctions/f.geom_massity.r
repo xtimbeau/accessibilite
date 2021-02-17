@@ -48,7 +48,7 @@ stat_massity <- function(mapping = NULL, data = NULL,
   layer(
     data = data,
     mapping = mapping,
-    stat = StatDensity,
+    stat = StatMassity,
     geom = geom,
     position = position,
     show.legend = show.legend,

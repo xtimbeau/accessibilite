@@ -6,13 +6,15 @@ iris15 <- load_DVF("iris15")
 idfplus20 <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(20000) %>% st_union
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union
 iris15_idf <- iris15 %>% filter(st_within(., idfplus20, sparse=FALSE))
-c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 idf <- iris15 %>% filter(UU2010=="00851") %>% st_union()
+c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 c200_idf10k <- c200 %>% filter(st_within(., st_buffer(uu851, 10000), sparse=FALSE))
-# définition des points d'arrivée à partir des centres des iris
-opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
-total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
+emp17 <- lload_DVF("emp17")
+
+# définition des points d'arrivée à partir des centres des iris
+opp <- emp17 %>% select(-EMP09, -CODE_IRIS) %>% st_centroid()
+
 threads <- 8
 
 # c200idf10k <- st_join(x=c200_idf10k, y=iris15 %>% select(CODE_IRIS, P15_POP), join=st_intersects, largest=TRUE)
@@ -32,15 +34,15 @@ r5_20 <- routing_setup_r5(
   percentiles = 5L,
   n_threads = 8)
 
-tr_r550_2020 <- iso_accessibilite(
+tr_r5emp17_2020 <- iso_accessibilite(
   quoi=opp,            
   ou=idf,          
-  resolution=50,      
+  resolution=200,      
   tmax=90,              
   routing=r5_20, 
-  dir="{localdata}/trr550_2020" %>% glue)
+  dir="{localdata}/trr5emp17_2020" %>% glue)
 
-save_DVF(tr_r550_2020)
+save_DVF(tr_r5emp17_2020)
 
 # GPE (50m&200m) ----------------------
 
@@ -109,7 +111,7 @@ tr_r5_20 <- routing_setup_r5(
 
 tr_r5_2020 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=tr_r5_20, 
@@ -128,7 +130,7 @@ tr_r5_19 <- routing_setup_r5(
 
 tr_r5_2019 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=tr_r5_19, 
@@ -147,7 +149,7 @@ tr_r5_18 <- routing_setup_r5(
 
 tr_r5_2018 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=tr_r5_18, 
@@ -166,7 +168,7 @@ tr_r5_17 <- routing_setup_r5(
 
 tr_r5_2017 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=tr_r5_17, 
@@ -187,7 +189,7 @@ r5_Dav <- routing_setup_r5(
 
 tr_r5_Dav <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=r5_Dav, 
@@ -196,7 +198,7 @@ save_DVF(tr_r5_Dav)
 
 tr_r5_Dav_50 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=r5_Dav, 
@@ -214,7 +216,7 @@ r5_Dap <- routing_setup_r5(
 
 tr_r5_Dap <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=r5_Dap, 
@@ -223,7 +225,7 @@ save_DVF(tr_r5_Dap)
 
 tr_r5_Dap_50 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=50,      
   tmax=90,             
   routing=r5_Dap, 
@@ -243,7 +245,7 @@ r5_avb <- routing_setup_r5(
 
 tr_r5_avant_bus <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=r5_avb, 
@@ -252,7 +254,7 @@ save_DVF(tr_r5_avant_bus)
 
 tr_r5_avant_bus_50 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=50,      
   tmax=90,             
   routing=r5_avb, 
@@ -270,7 +272,7 @@ r5_apb <- routing_setup_r5(
 
 tr_r5_apres_bus <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing = r5_apb, 
@@ -280,7 +282,7 @@ save_DVF(tr_r5_apres_bus)
 
 tr_r5_apres_bus_50 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=50,      
   tmax=90,             
   routing = r5_apb, 
@@ -301,7 +303,7 @@ rail_20 <- routing_setup_r5(
 
 rail_r5_2020_200 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=rail_20, 
@@ -319,7 +321,7 @@ bus_20 <- routing_setup_r5(
 
 bus_r5_2020_200 <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=bus_20, 
@@ -344,7 +346,7 @@ c200_idf10k <- c200_idf10k %>%
 
 popc200_2020 <- iso_accessibilite(
   quoi=c200_idf10k,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=tr_20, 
@@ -365,7 +367,7 @@ r5_20 <- routing_setup_r5(
 
 tr_r5_2020_median <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=r5_20, 
@@ -385,7 +387,7 @@ r5_20 <- routing_setup_r5(
 
 tr_r5_2020_20d <- iso_accessibilite(
   quoi=opp,            
-  ou=idf,          
+  ou=c200_idf,          
   resolution=200,      
   tmax=90,             
   routing=r5_20, 
@@ -403,7 +405,7 @@ r5_20 <- routing_setup_r5(
 
 tr_r5_2020_120d <- iso_accessibilite(
   quoi=opp,
-  ou=idf, 
+  ou=c200_idf, 
   resolution=200,
   tmax=90, 
   routing=r5_20, 

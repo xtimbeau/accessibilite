@@ -50,18 +50,17 @@ iso_car_dvf_osrm <- iso_accessibilite(
   dir="{localdata}/carosrmdvf_2020" %>% glue,
   out="data.table")
 
-save_DVF(iso_car_50_osrm_dvf, rep="rda")
-
-# resolution 50 -------------------
+save_DVF(iso_car_dvf_osrm)
 
 ## transit r5 ----------------------
-tr_r5 <- routing_setup_r5(
-  path="{DVFdata}/r5r_data/IDFM" %>% glue, 
+tr_r5_20 <- routing_setup_r5(
+  path="{localdata}/IDFM 2020",
+  date = "14-12-2020 9:00:00",
   mode=c("WALK", "TRANSIT"),
   time_window=60,
-  montecarlo = 100, 
+  montecarlo = 30, 
   percentiles = 5L,
-  n_threads = threads)
+  n_threads = 8)
 
 # res50
 res <- 50
@@ -71,10 +70,10 @@ isotrr550 <- iso_accessibilite(
     resolution=res,      
     tmax=90,            
     pdt=5,               
-    routing=tr_r5, 
+    routing=tr_r5_20, 
     dir="{localdata}/trr5{res}" %>% glue)
 
-save_DVF(isotrr550, rep="rda/isoIDF50/")
+save_DVF(isotrr550)
 
 ## transit GPE r5------------------------------------------------------
 

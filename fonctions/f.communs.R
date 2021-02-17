@@ -95,7 +95,7 @@ save_DVF <- function(x, nom = NULL, rep = "Rda", local = TRUE, preset = "fast") 
   } else if (is.raster(x)) {
     suppressWarnings(readAll(x))
   }
-  qs::qsave(x, file = filename, preset = preset, nthreads = 4)
+  qs::qsave(x, file = filename, preset = preset, nthreads = 8)
 }
 
 xgbmsave <- function(mod, fn) {
