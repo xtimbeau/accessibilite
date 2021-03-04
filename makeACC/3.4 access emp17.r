@@ -23,7 +23,7 @@ threads <- 8
 
 # https://openmobilitydata.org/p/stif/822?p=8
 
-# référence 2020 (50m) ----------------------
+# référence 2020 (50m&200m) ----------------------
 
 r5_20 <- routing_setup_r5(
   path="{localdata}/IDFM 2020",
@@ -34,7 +34,7 @@ r5_20 <- routing_setup_r5(
   percentiles = 5L,
   n_threads = 8)
 
-tr_r5emp17_2020 <- iso_accessibilite(
+tr_r5_e17_2020 <- iso_accessibilite(
   quoi=opp,            
   ou=idf,          
   resolution=200,      
@@ -42,7 +42,17 @@ tr_r5emp17_2020 <- iso_accessibilite(
   routing=r5_20, 
   dir="{localdata}/trr5emp17_2020" %>% glue)
 
-save_DVF(tr_r5emp17_2020)
+save_DVF(tr_r5_e17_2020)
+
+tr_r5_e17_50_2020 <- iso_accessibilite(
+  quoi=opp,            
+  ou=idf,          
+  resolution=50,      
+  tmax=90,              
+  routing=r5_20, 
+  dir="{localdata}/trr5emp1750_2020" %>% glue)
+
+save_DVF(tr_r5_e17_50_2020)
 
 # GPE (50m&200m) ----------------------
 
@@ -55,23 +65,23 @@ r5_GPE <- routing_setup_r5(
   percentiles = 5L,
   n_threads = 8)
 
-tr_r5_GPE_50 <- iso_accessibilite(
+tr_r5_GPE_e17_50 <- iso_accessibilite(
   quoi=opp,            
   ou=idf,          
   resolution=50,      
-  tmax=90,             
+  tmax=120,             
   routing=tr_r5_20, 
-  dir="{localdata}/trr550_GPE" %>% glue)
-save_DVF(tr_r5_GPE_50)
+  dir="{localdata}/trr5e1750_GPE" %>% glue)
+save_DVF(tr_r5_GPE_e17_50)
 
 tr_r5_GPE <- iso_accessibilite(
   quoi=opp,            
   ou=idf,          
   resolution=200,      
-  tmax=90,             
+  tmax=120,             
   routing=tr_r5_20, 
-  dir="{localdata}/trr5200_GPE" %>% glue)
-save_DVF(tr_r5_GPE)
+  dir="{localdata}/trr5e17200_GPE" %>% glue)
+save_DVF(tr_r5_GPE_e17)
 
 # référence 2020 (points DV3F) ----------------------
 dv3f <- lload_DVF("dv3f.c3035.u") %>%
@@ -86,17 +96,16 @@ tr_r5_20 <- routing_setup_r5(
   percentiles = 5L,
   n_threads = 8)
 
-tr_r5_2020_dvf <- iso_accessibilite(
+tr_r5_e17_2020_dvf <- iso_accessibilite(
   quoi=opp,            
   ou=dv3f,      
   tmax=120,            
-  pdt=5,               
+  pdt=1,               
   routing=tr_r5_20, 
-  dir="{localdata}/trr550_2020_dvf3" %>% glue,
+  dir="{localdata}/trr5_e17_2020_dvf3" %>% glue,
   out="data.table")
 
-save_DVF(tr_r5_2020_dvf)
-
+save_DVF(tr_r5_e17_2020_dvf)
 
 # cartes pour différentes années (200m) ---------------
 
