@@ -9,6 +9,15 @@ paca <- iris15 %>% filter(UU2010=="00759") %>% st_buffer(20000) %>% st_union
 uu759 <- iris15 %>% filter(UU2010=="00759") %>% st_union
 iris15_paca <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,paca, sparse=FALSE)) %>% st_centroid()
 
+# on enregistre le fichier d'opportunité en csv et en lat/lon pour Conveyal R5
+paca.csv <- iris15_paca %>% 
+    st_transform(4326) %>%  # on transfome en coordonnées GPS
+    mutate(lat=st_coordinates(.)[,1],
+           lon=st_coordinates(.)[,2]) %>% 
+    st_drop_geometry()
+# il est de bonne pratique de vérifier que c'est OK en regardant le fichier (taper paca.csv dans la console, ça affiche les premières lignes ou view(paca.csv))
+fwrite(paca.csv, "./Arij/paca.csv")
+
 # carreaux sélectionnés pour le calcul de la grille
 # On ne calcule pas les isochrones pour des carreaux inhabités
 # Pour l'INSEE le nombre de ménages par carreau est supérieur à 10
