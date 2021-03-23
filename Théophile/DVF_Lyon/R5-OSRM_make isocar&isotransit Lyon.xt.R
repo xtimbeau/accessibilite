@@ -1,4 +1,4 @@
-  source("access.r")
+  source("init.r")
   
   # utile pour OSRM
   plan("multiprocess", workers=8)
@@ -25,18 +25,18 @@
   
   car_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode="CAR")
   tr_r5_Lyon <- routing_setup_r5(path="{DVFdata}/r5r_data/Lyon/r5", mode=c("WALK", "TRANSIT"),
-                                 time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
+                                 time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4, date="15-10-2020 8:00:00")
   
   iso_transit_50_r5_Lyon <- iso_accessibilite(quoi=iris15_rha,
                                          ou=c200_758,
                                          resolution=50,
-                                         tmax=60, 
-                                         pdt=5, 
+                                         tmax=120, 
+                                         pdt=1, 
                                          routing=tr_r5_Lyon) 
   
   save_DVF(iso_transit_50_r5_Lyon)
   
-  tm_shape(iso_transit_50_r5_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
+  tm_shape(iso_transit_50_r5_Lyon$EMP09$iso45m)+tm_raster(style="cont", palette=heatrg)
   
   # moteur OSRM
   # pas de transports en commun
@@ -54,7 +54,7 @@
   
   save_DVF(iso_car_50_osrm_Lyon)
   
-  tm_shape(iso_car_50_osrm_Lyon$EMP09)+tm_raster(style="cont", palette=heatrg)
+  tm_shape(iso_car_50_osrm_Lyon$EMP09$iso45m)+tm_raster(style="cont", palette=heatrg)
   
   
   c200 <- load_DVF("c200")

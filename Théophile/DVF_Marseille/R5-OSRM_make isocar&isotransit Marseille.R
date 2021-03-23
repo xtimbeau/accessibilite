@@ -1,4 +1,4 @@
-source("access.r")
+source("init.r")
 
 # utile pour OSRM
 plan("multiprocess", workers=8)
@@ -11,7 +11,6 @@ paca <- iris15 %>% filter(UU2010=="00759") %>% st_buffer(20000) %>% st_union
 uu759 <- iris15 %>% filter(UU2010=="00759") %>% st_union
 iris15_paca <- iris15 %>% select(EMP09, P15_POP) %>% filter(st_within(.,paca, sparse=FALSE)) %>% st_centroid()
 
-
 # carreaux sélectionnés pour le calcul de la grille
 # l'avantage est de ne pas calculer les isochrones pour des carreaux inhabités
 # par construction le nombre de ménages par carreau est supérieur à 10
@@ -21,20 +20,19 @@ c200_759 <- c200 %>% filter(st_within(., uu759, sparse=FALSE))
 
 rm(c200, iris15)
 
-
 # Moteur r5, en voiture ou en transit
 # attention la voiture est lente, surout pour des temps importants
 
 car_r5_Marseille <- routing_setup_r5(path="{DVFdata}/r5r_data/Marseille/r5" %>% glue, mode="CAR")
 tr_r5_Marseille <- routing_setup_r5(path="{DVFdata}/r5r_data/Marseille/r5" %>% glue, mode=c("WALK", "TRANSIT"),
-                                    time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4)
+                                    time_window=60,montecarlo = 100,percentiles = 5L,n_threads=4, date="15-10-2020 8:00:00")
 
 
 iso_transit_50_r5_Marseille <- iso_accessibilite(quoi=iris15_paca, # les variables d'opportunité
                                        ou=c200_759, # la grille cible (plus long sur c200 que sur c200_mt)
                                        resolution=50, # la résolution finale (le carreau initial est de 200m, il est coupé en 16 pour des carreaux de 50m)
-                                       tmax=60, # le temps max des isochrones en minutes
-                                       pdt=5, # le pas de temps pour retourner le résultat en minute
+                                       tmax=120, # le temps max des isochrones en minutes
+                                       pdt=1, # le pas de temps pour retourner le résultat en minute
                                        routing=tr_r5_Marseille) # moteur de routing
 
 save_DVF(iso_transit_50_r5_Marseille)
@@ -44,7 +42,7 @@ tm_shape(iso_transit_50_r5_Marseille$EMP09)+tm_raster(style="cont", palette=heat
 
 
 
-# moteur OSRM
+# moteur OSRM 
 # pas de transports en commun
 # rapide pour la voiture, y compris pour des temps longs
 
