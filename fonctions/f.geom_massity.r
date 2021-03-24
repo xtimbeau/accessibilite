@@ -35,7 +35,7 @@ GeomMassity <- ggproto("GeomMassity", GeomArea,
 stat_massity <- function(mapping = NULL, data = NULL,
                          geom = "area", position = "stack",
                          ...,
-                         bw = "nrd0",
+                         bw = "SJ",
                          adjust = 1,
                          kernel = "gaussian",
                          n = 512,
@@ -104,35 +104,48 @@ StatMassity <- ggproto("StatMassity", Stat,
 
 compute_massity <- function(x, m, from, to, bw = "nrd0", adjust = 1,
                             kernel = "gaussian", n = 512) {
+  nax <- is.na(x)
+  x <- x[!nax]
   nx <- length(x)
   if (is.null(m)) {
     w <- rep(1 / nx, nx)
     tm <- 1
   } else {
-    w <- m / sum(m)
+    nam <- is.na(m)
+    x <- x[!nam]
+    nx <- length(x)
+    m <- m[!nam]
     tm <- sum(m)
+    if(tm>0)
+      w <- m / tm
+    else 
+      w <- 1
   }
   
   # if less than 2 points return data frame of NAs and a warning
-  if (nx < 2) {
-    warn("Groups with fewer than two data points have been dropped.")
+  if (nx < 2 | tm==0) {
+    warn("Groups with fewer than two data points or 0 mass have been dropped.")
     return(vctrs::new_data_frame(list(
       x = NA_real_,
       density = NA_real_,
       mass = NA_real_,
+      mean = NA_real_,
       cummass = NA_real_,
       totalmass = NA_real_,
       n = NA_integer_
-    ), n = 1))
+    ), n = 1L))
   }
   
   dens <- stats::density(x, weights = w, bw = bw, adjust = adjust,
                          kernel = kernel, n = n, from = from, to = to)
-  
+  uw_dens <- stats::density(x, bw = bw, adjust = adjust,
+                            kernel = kernel, n = n, from = from, to = to)
+    
   vctrs::new_data_frame(list(
     x = dens$x,
     density = dens$y,
     mass =  dens$y * tm,
+    mean = dens$y * tm / (uw_dens$y*nx),
     cummass = cumsum(dens$y*tm)*(max(dens$x)-min(dens$x))/n,
     totalmass = tm,
     n = nx

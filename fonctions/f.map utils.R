@@ -185,6 +185,15 @@ idINS3035 <- function(x, y=NULL, resolution=200, resinstr=TRUE)
   resultat
 }
 
+idINS2sf <- function(data, idINS = "idINS50")
+{
+  xy <- idINS2point(data[[idINS]])
+  data %>%
+    as_tibble() %>%
+    mutate(X=xy[,1], Y=xy[,2]) %>% 
+    st_as_sf(coords=c("X", "Y"), crs=3035)
+}
+
 raster_ref <- function(data, resolution=200, crs=3035) 
 {
   alignres <- max(resolution, 200)
@@ -310,6 +319,7 @@ getINSres <- function(dt, resolution, idINS="idINS") {
 dt2r <- function(dt, resolution=NULL, idINS="idINS") 
   {
   library(data.table, quietly = TRUE)
+  dt <- setDT(dt)
   rr <- getresINS(dt, idINS)
   ncol <- names(dt)
   if(length(rr)==0)
