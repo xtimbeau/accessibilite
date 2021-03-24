@@ -71,10 +71,13 @@ load_DVF <- function(file, rep = "Rda", local = FALSE, qs=TRUE) {
 # lit un objet R depuis le répertoire DVF
 
 save_DVF <- function(x, nom = NULL, rep = "Rda", local = TRUE, preset = "fast") {
+  env <- parent.frame()
+  rep <- glue::glue(rep, .envir = env)
+  if(!is.null(nom)) nom <- glue::glue(nom, .envir = env)
   ex <- rlang::enquo(x)
   n_x <- rlang::as_name(ex)
   rep_u <- if (local) {
-    localdata
+    stringr::str_c(localdata, "/", rep)
   } else {
     stringr::str_c(DVFdata, "/", rep)
   }
@@ -311,11 +314,13 @@ f2si2 <- function(number, rounding = TRUE, digits = 1, unit = "median") {
     max = max(ix, na.rm = TRUE),
     multi = ix
   )
-  if (rounding == TRUE) {
-    sistring <- paste0(round(number / lut[ix], digits), pre[ix])
-  } else {
-    sistring <- paste0(number / lut[ix], pre[ix])
-  }
+ if (rounding == TRUE)
+    scaled_number <- round(number/lut[ix], digits)
+  else
+    scaled_number <- number/lut[ix]
+  
+  sistring <- paste0(scaled_number, pre[ix])
+  sistring[scaled_number==0] <- "0"
   return(sistring)
 }
 
