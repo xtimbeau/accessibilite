@@ -196,3 +196,16 @@ ggplot(emp_tot_reg, aes(x=log(EMP))) +
   geom_point(aes(y=log(sp)), alpha=0.1, col="orange")+
   geom_point(aes(y=log(sp_act)), alpha=0.1, col="blue")+
   geom_smooth(aes(y=log(sp)), method="lm")
+
+# export diu csv pour r5
+source("init.r")
+emp17 <- lload_DVF("emp17.r93")
+
+emp17.csv <- emp17 %>%
+  idINS2sf(idINS="idINS200") %>%
+  st_transform(4326) %>%
+  mutate(lon=st_coordinates(.)[,1], lat=st_coordinates(.)[,2]) %>% 
+  st_drop_geometry() %>% 
+  select(-idINS200, -CODE_IRIS)
+
+fwrite(emp17.csv, "{DVFdata}/rda/emp17.csv" %>% glue)
