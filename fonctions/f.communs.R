@@ -48,7 +48,10 @@ load_result <- function(x) {
 load_DVF <- function(file, rep = "Rda", local = FALSE, qs=TRUE) {
   env <- parent.frame()
   str <- glue::glue(file, .envir = env)
-  rep <- if (local) localdata else glue::glue("{DVFdata}/{rep}")
+  rep <- if (local) 
+    glue::glue("{localdata}/{rep}") 
+  else
+    glue::glue("{DVFdata}/{rep}")
   filename <- glue::glue("{rep}/{str}.rda")
   what <- if(qs) 
     qs::qread(filename, nthreads = 4) 
