@@ -80,6 +80,11 @@ kfoot_corine_50 <- iso_accessibilite(
   pdt=1,
   routing=fdt_idf_50)
 
+kfoot_corine_50c <- kfoot_corine_50$c
 kfoot_corine_50 <- kfoot_corine_50$area
 
 save_DVF(kfoot_corine_50)
+save_DVF(kfoot_corine_50c)
+
+kfoot_corine_50c %>% iso2time(0.05) %>% plot()
+ggplot()+geom_Raster(kfoot_corine_50c %>% iso2time(0.05), aes(fill=to50m))
