@@ -134,6 +134,9 @@ emp_flores_fin <- emp_flores_aug %>%
   summarise(across(c(emp17, emp17_mG), ~sum(.x, na.rm=TRUE)))
 
 emp17 <- st_join(emp_flores_fin %>% idINS2sf("idINS200"), iris %>% select(EMP09, CODE_IRIS))
+emp17 <- emp17 %>%
+  group_by(CODE_IRIS) %>% 
+  mutate(EMP09 = EMP09/n())
 
 save_DVF(emp17, "emp17.{reg}")
 
@@ -144,7 +147,7 @@ emp_iris <- emp17 %>%
   group_by(CODE_IRIS) %>% 
   summarize(emp17=sum(emp17, na.rm=FALSE),
             emp17_mG=sum(emp17_mG, na.rm=FALSE),
-            EMP09=first(EMP09)) %>% 
+            EMP09=sum(EMP09)) %>% 
   left_join(iris %>% as_tibble() %>% select(CODE_IRIS, geometry), by="CODE_IRIS") %>% 
   st_as_sf()
 

@@ -1,43 +1,65 @@
-source('access.r')
+source('init.r')
 c200 <- load_DVF('c200')
 iris15 <- load_DVF("iris15")
 
 # IDF -----------------------------------
-isos_tr <- map(depIdf, ~load_DVF("iso75/isotr50r5d{.x}"))
+# isos_tr <- map(depIdf, ~load_DVF("iso75/isotr50r5d{.x}"))
+# 
+# iso_tr_50_r5 <-list(
+#   EMP09 = do.call(raster::merge, map(isos_tr, "EMP09")),
+#   P15_POP = do.call(raster::merge, map(isos_tr, "P15_POP")),
+#   cste = do.call(raster::merge, map(isos_tr, "cste")))
+# 
+# names(iso_tr_50_r5$EMP09) <- names(isos_tr[[1]]$EMP09)
+# names(iso_tr_50_r5$P15_POP) <- names(isos_tr[[1]]$P15_POP)
+# names(iso_tr_50_r5$cste) <- names(isos_tr[[1]]$cste)
+# save_DVF(iso_tr_50_r5)
 
-iso_tr_50_r5 <-list(
-  EMP09 = do.call(raster::merge, map(isos_tr, "EMP09")),
-  P15_POP = do.call(raster::merge, map(isos_tr, "P15_POP")),
-  cste = do.call(raster::merge, map(isos_tr, "cste")))
+iso_trr5 <- lload_DVF("tr_r550_2020")
 
-names(iso_tr_50_r5$EMP09) <- names(isos_tr[[1]]$EMP09)
-names(iso_tr_50_r5$P15_POP) <- names(isos_tr[[1]]$P15_POP)
-names(iso_tr_50_r5$cste) <- names(isos_tr[[1]]$cste)
-save_DVF(iso_tr_50_r5)
-iso_tr_200_r5 <- map(iso_tr_50_r5, ~raster::aggregate(.x, 4))
-save_DVF(iso_tr_200_r5, rep="rda/iso200")
+ttrr5_emp09 <- iso2time(iso_trr5$EMP09, seuils=c(50000, 100000, 250000, 1000000))
+names(ttrr5_emp09)
 
-ttrr5_emp09 <- iso2time(iso_tr_50_r5$EMP09, seuils=c(25000, 50000, 750000, 100000,150000,200000, 250000,500000))
-save_DVF(ttrr5_emp09)
-
-ttrr5_emp09_200 <- raster::aggregate(ttrr5_emp09, 4)
-save_DVF(ttrr5_emp09_200, rep="rda/iso200")
+# ttrr5_emp09_200 <- raster::aggregate(ttrr5_emp09, 4)
+# save_DVF(ttrr5_emp09_200, rep="rda/iso200")
 
 #transit
-ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
+tmap_mode("view")
 uu851 <- load_DVF("uu851")
 m_idf <- uu851$mbfdc+
   tm_shape(ttrr5_emp09$to100k)+
-  tm_raster(style="cont", palette=heatrg)+
+  tm_raster(style="cont", palette=terrain.colors(20, rev=FALSE))+
   uu851$hdc
-graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09" %>% glue)
-m_idf <- uu851$mbfdc+
-  tm_shape(ttrr5_emp09_200$to25k)+
-  tm_raster(style="cont", palette=heatrg)+
-  uu851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
-graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 25k" %>% glue)
+tmap_save(tm=m_idf, "{DVFdata}/presentation/vv/idf_ttremp09100k.svg" %>% glue)
+# m_idf <- uu851$mbfdc+
+#   tm_shape(ttrr5_emp09_200$to25k)+
+#   tm_raster(style="cont", palette=heatrg)+
+#   uu851$hdc+tm_layout(legend.title.size = 2, legend.text.size = 2)
+# graph2svg(m_idf, file="{DVFdata}/presentation/vv/idf_ttremp09 25k" %>% glue)
 
-ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
+
+iris <- load_DVF("iris15") %>% filter(UU2010=="00851") %>% st_union()
+mg <- ggplot(iris)+
+  geom_sf(fill="grey97", color=NA)+
+  geom_Raster(ttrr5_emp09, aes(fill=value), long=TRUE, style="cont")+
+  scale_fill_continuous_sequential(palette="Terrain 2", na.value=NA, rev=FALSE)+
+  geom_sf(data=iris,fill="transparent", col="black", size=0.1)+
+  theme_void(base_size = 9)+
+  labs(fill="Time to jobs, minutes")+
+  theme(legend.title=element_text(size=7), legend.text=element_text(size=7))+
+  facet_wrap(~variable)
+ggsave(plot=mg, "{DVFdata}/presentation/vv/idf_ttremp09 facet.jpg" %>% glue, width=25, height = 17, units="cm")
+
+
+lyon <- lload_DVF("iso_transit_50_r5_Lyon")
+t_e9_lyon <- iso2time(lyon$EMP09, seuils=c(100000, 500000, 1000000, 4000000))
+m_lyon <- tm_shape(ttrr5_emp09$to100k)+
+  tm_raster(style="cont", palette=terrain.colors(20, rev=FALSE))+
+  uu851$hdc
+tmap_save(tm=m_idf, "{DVFdata}/presentation/vv/idf_ttremp09100k.svg" %>% glue)
+
+
+
 
 ttrr5_emp09_200 <- load_DVF("iso200/ttrr5_emp09_200")
 idf_dt <- r2dt(ttrr5_emp09_200)
@@ -45,7 +67,7 @@ idf_dt <- merge(idf_dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS2
 Nidf <- idf_dt[, sum(Ind)]
 idf <- ggplot(idf_dt, aes(x=to25k, y=..density..*Nidf, weight=Ind))+geom_density()
 
-ttrr5_emp09_lyon <- load_DVF("ttr_r5_emp09_Lyon")
+ttrr5_emp09_lyon <- lload_DVF("ttr_r5_emp09_Lyon")
 ttrr5_emp09_lyon <- aggregate(ttrr5_emp09_lyon, 4)
 lyon_dt <- r2dt(ttrr5_emp09_lyon)
 lyon_dt <- merge(lyon_dt, c200[, c("idINS200", "Ind")], by.x="idINS", by.y="idINS200")
@@ -113,40 +135,37 @@ dcvsdt <- ggplot(idf_dt, aes(x=d2c, y=to100k))+geom_point(alpha=0.05, col="darkb
 graph2svg(dcvsdt, file="{DVFdata}/presentation/vv/idf_dc_versus_dt" %>% glue)
 
 # isochrones
-montreuil <- iris15 %>% filter(COM=="93048") %>% st_buffer(2000) %>% st_union
+montreuil <- iris15 %>% filter(COM=="93048") %>% st_buffer(4000) %>% st_union
 library(ceramic)
-username <- "theophilegervais"
-mapbox_key <- "pk.eyJ1IjoidGhlb3BoaWxlZ2VydmFpcyIsImEiOiJja2gwZjY0N2YweGU0MnFudml6YmNoM2l4In0.jjY7QwYgIgAB7xHGHrT3ig"
-style_id <- "ckh3em89k2lf919nkb0joxe70" # défini sur mon compte MapBox
+username <- Sys.getenv("mapboxusername")
+mapbox_key <- Sys.getenv("mapboxkey")
+style_id <- "ckjka0noe1eg819qrhuu1vigs"
 Sys.setenv(MAPBOX_API_KEY= mapbox_key)
-mont_bb <- montreuil %>% st_union %>% st_transform(4326)
+mont_bb <- montreuil %>% st_union %>% st_transform(4326) 
+mont_bb2 <- montreuil %>%  st_buffer(2000) %>% st_union() %>% st_transform(4326)
 st_crs(mont_bb) <- st_crs("+proj=longlat +ellps=WGS84") 
-m.mb <- cc_location(loc=mont_bb, zoom = 11,
-                         base_url = "https://api.mapbox.com/styles/v1/{username}/{style_id}/tiles/512/{zoom}/{x}/{y}")
+st_crs(mont_bb2) <- st_crs("+proj=longlat +ellps=WGS84") 
+m.mb <- cc_location(loc=mont_bb, zoom = 11, base_url = "https://api.mapbox.com/styles/v1/xtimbeau/{style_id}/tiles/512/{zoom}/{x}/{y}")
 
-tr_r5 <- setup_r5(data_path = "{DVFdata}/r5r_data/IDFM" %>% glue, verbose = FALSE)
+tr_r5 <- r5r::setup_r5(data_path = "{DVFdata}/r5r_data/IDFM" %>% glue, verbose = FALSE)
 r1 <- r5_isochrone(lon=2.448, lat=48.869, resolution=50, r5_core = tr_r5, mode=c("WALK"), temps_max=20)
 r2 <- r5_isochrone(lon=2.416, lat=48.851, resolution=50, r5_core = tr_r5, mode=c("WALK"), temps_max=20)
 r3 <- r5_isochrone(lon=2.416, lat=48.851, resolution=50, r5_core = tr_r5, mode=c("CAR"), temps_max=10)
-r4 <- r5_isochrone(lon=2.416, lat=48.851, resolution=50, r5_core = tr_r5, mode=c("WALK","TRANSIT"), temps_max=20)
+r4 <- r5_isochrone(lon=2.416, lat=48.851, resolution=50, r5_core = tr_r5, mode=c("WALK","TRANSIT"), temps_max=30, max_walk_dist = 1000)
 m1 <- tm_shape(m.mb)+tm_rgb()+
-  tm_shape(r1, bbox=montreuil)+tm_raster(style="cont", alpha=0.75)+
-  tm_layout(legend.title.size = 2, legend.text.size = 2)
-m2 <- tm_shape(m.mb)+tm_rgb()+
-  tm_shape(r2, bbox=montreuil)+tm_raster(style="cont", alpha=0.75)+
-  tm_shape(r1, bbox=montreuil)+tm_raster(style="cont", alpha=0.75)+
-  tm_layout(legend.title.size = 2, legend.text.size = 2)
-m3 <- tm_shape(m.mb)+tm_rgb()+
-  tm_shape(r3, bbox=montreuil)+tm_raster(style="cont", alpha=0.75)+
-  tm_layout(legend.title.size = 2, legend.text.size = 2)
-m4 <- tm_shape(m.mb)+tm_rgb()+
-  tm_shape(r4, bbox=montreuil)+tm_raster(style="cont", alpha=0.75)+
-  tm_layout(legend.title.size = 2, legend.text.size = 2)
+  tm_shape(r1, bbox=montreuil)+tm_raster(style="cont", alpha=0.25, title="minutes to reach", palette="Blues")
 
-graph2svg(m1, file="{DVFdata}/presentation/vv/iso_foot1" %>% glue)
-graph2svg(m2, file="{DVFdata}/presentation/vv/iso_foot2" %>% glue)
-graph2svg(m3, file="{DVFdata}/presentation/vv/iso_car" %>% glue)
-graph2svg(m4, file="{DVFdata}/presentation/vv/iso_transit" %>% glue)
+m2 <- tm_shape(m.mb)+tm_rgb()+
+  tm_shape(r2, bbox=montreuil)+tm_raster(style="cont", alpha=0.5, title="minutes to reach", palette="Blues")+
+  tm_shape(r1, bbox=montreuil)+tm_raster(style="cont", alpha=0.5, title="minutes to reach", palette="Blues")
+m3 <- tm_shape(m.mb)+tm_rgb()+  tm_shape(r3, bbox=montreuil)+tm_raster(style="cont",alpha=0.5, title="minutes to reach", palette="Greens")
+m4 <- tm_shape(m.mb)+tm_rgb(alpha=1)+
+  tm_shape(r4, bbox=montreuil)+tm_raster(style="cont", alpha=0.5, title="minutes to reach", palette="Greens")
+
+tmap_save(tm=m1, filename="{DVFdata}/presentation/vv/iso_foot1.svg" %>% glue, width=25, height = 17, units="cm")
+tmap_save(tm=m2, filename="{DVFdata}/presentation/vv/iso_foot2.svg" %>% glue, width=25, height = 17, units="cm")
+tmap_save(tm=m3, filename="{DVFdata}/presentation/vv/iso_car.svg" %>% glue, width=25, height = 17, units="cm")
+tmap_save(tm=m4, filename="{DVFdata}/presentation/vv/iso_transit.svg" %>% glue, width=25, height = 17, units="cm")
 
 
 # voiture

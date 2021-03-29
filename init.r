@@ -8,7 +8,7 @@ gc()
 
 dvfpackages <- c(
   "raster", "sf", "tmap",
-  "patchwork", "extrafont",
+  "patchwork", "extrafont", "colorspace",
   "microbenchmark", "tictoc", "profvis",
   "skimr", "furrr", "data.table", "lobstr",
   "magrittr", "glue", "tidyverse"

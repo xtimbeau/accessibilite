@@ -1,4 +1,4 @@
-source("access.r")
+source("init.r")
 # init ----------------------
 plan(sequential)
 c200 <- load_DVF("c200") %>% st_transform(3035)
@@ -36,11 +36,11 @@ tr_r550_2020 <- iso_accessibilite(
   quoi=opp,            
   ou=idf,          
   resolution=50,      
-  tmax=90,              
+  tmax=120,              
   routing=r5_20, 
   dir="{localdata}/trr550_2020" %>% glue)
 
-save_DVF(tr_r550_2020)
+save_DVF(tr_r550_2020, local=FALSE)
 
 # GPE (50m&200m) ----------------------
 

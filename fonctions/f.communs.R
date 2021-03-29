@@ -350,11 +350,11 @@ if2si2 <- function(text) {
   value * lut[unit]
 }
 
-uf2si2 <- function(number, rounding = TRUE, unit = "median") {
+uf2si2 <- function(number, rounding = TRUE, unit = "median", digits_max=4) {
   n_number <- length(number)
   digits <- 1
   f2 <- f2si2(number, digits = digits, unit = unit)
-  while (length(unique(f2)) < n_number) {
+  while (length(unique(f2)) < n_number & digits <= digits_max) {
     digits <- digits + 1
     f2 <- f2si2(number, digits = digits, unit = unit)
   }
