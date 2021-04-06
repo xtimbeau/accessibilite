@@ -13,7 +13,7 @@ c200_idf10k <- c200 %>% filter(st_within(., st_buffer(uu851, 10000), sparse=FALS
 opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
-threads <- 8
+threads <- 12
 
 # c200idf10k <- st_join(x=c200_idf10k, y=iris15 %>% select(CODE_IRIS, P15_POP), join=st_intersects, largest=TRUE)
 # iris2 <- c200idf10k %>% group_by(CODE_IRIS) %>% summarize(pop=first(P15_POP), ind=sum(Ind))
