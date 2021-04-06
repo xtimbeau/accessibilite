@@ -13,9 +13,10 @@ isAraster <- function(x)
   return((class(x)[1]=="RasterLayer" || class(x)[1]=="RasterBrick" || class(x)[1]=="RasterStack"))
 }
 
-iso2time <- function(isoraster, seuils=median(cellStats(isoraster, median)))
+iso2time <- function(isoraster, seuils=median(raster::cellStats(isoraster, median)))
 {
   checkmate::assert(checkmate::checkMultiClass(isoraster, c("RasterLayer", "RasterBrick", "RasterStack")))
+  seuils <- unique(seuils)
   isotimes <- names(isoraster) %>%
     stringr::str_extract("[:digit:]+") %>%
     as.numeric()
