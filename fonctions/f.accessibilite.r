@@ -279,6 +279,7 @@ iso_ouetquoi_4326 <- function(ou, quoi, res_ou, res_quoi, opp_var, fun_quoi="mea
     quoi <- quoi %>% st_transform(3035)
     quoi_surf <- st_area(quoi) %>% as.numeric()
     gc()
+    message("...rasterization")
     rr_3035 <- 
       raster::brick(
         purrr::map(

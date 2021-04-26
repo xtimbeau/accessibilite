@@ -1,4 +1,4 @@
-source("access.r")
+source("init.r")
 # init ----------------------
 plan(sequential)
 c200 <- load_DVF("c200") %>% st_transform(3035)
@@ -9,10 +9,15 @@ iris15_idf <- iris15 %>% filter(st_within(., idfplus20, sparse=FALSE))
 c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
 
 # définition des points d'arrivée à partir des centres des iris
-opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
+opp09 <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
 threads <- 8
+
+emp17 <- lload_DVF("emp17")
+
+# définition des points d'arrivée à partir des centres des iris
+opp17 <- emp17 %>% select(-EMP09, -CODE_IRIS) %>% st_centroid()
 
 # Resolution dvf (r5 et osrm) ---------------------
 dv3f <- lload_DVF("dv3f.c3035.u") %>%
@@ -42,15 +47,25 @@ car_osrm <- routing_setup_osrm(server="5003", profile="driving")
 dv3f <- lload_DVF("dv3f.c3035.u") %>%
   st_as_sf(coords=c("x", "y"), crs=3035)
 
-iso_car_dvf_osrm <- iso_accessibilite(
-  quoi=opp,                       
+iso_car_dvf_osrm_09 <- iso_accessibilite(
+  quoi=opp09,                       
   ou=dv3f,                           
-  tmax=120,                       
+  tmax=90,                       
   routing=car_osrm,
-  dir="{localdata}/carosrmdvf_2020" %>% glue,
+  dir="{localdata}/carosrmdvf_09" %>% glue,
   out="data.table")
 
-save_DVF(iso_car_dvf_osrm)
+save_DVF(iso_car_dvf_osrm_09)
+
+iso_car_dvf_osrm_17 <- iso_accessibilite(
+  quoi=opp17,                       
+  ou=dv3f,                           
+  tmax=90,                       
+  routing=car_osrm,
+  dir="{localdata}/carosrmdvf_17" %>% glue,
+  out="data.table")
+
+save_DVF(iso_car_dvf_osrm_17)
 
 ## transit r5 ----------------------
 tr_r5_20 <- routing_setup_r5(
