@@ -14,7 +14,8 @@ gradientize <- function(data, x, y, nbins=100L, binwidth=NULL, fun="sum", quants
   ldata <- tibble(x=vecx, y=vecy)
   
   if(length(grps!=0))
-     ldata <- bind_cols(ldata, data %>% select(all_of(grps)))
+     ldata <- bind_cols(ldata, data %>%
+                          dplyr::select(all_of(grps)))
   
   xmin <-  min(ldata$x, na.rm=TRUE)
   xmax <-  max(ldata$x, na.rm=TRUE)

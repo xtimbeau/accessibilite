@@ -45,7 +45,7 @@ load_result <- function(x) {
 
 # enregistre un objet R dans le répertoire DVF
 
-load_DVF <- function(file, rep = "Rda", local = FALSE, qs=TRUE) {
+load_DVF <- function(file, rep = "rda", local = FALSE, qs=TRUE) {
   env <- parent.frame()
   str <- glue::glue(file, .envir = env)
   rep <- if (local) 
@@ -122,8 +122,8 @@ lsave_DVF <- function(xgb, nom = NULL) {
   save_DVF(xgb, nom = nom, local = TRUE)
 }
 
-lload_DVF <- function(x) {
-  load_DVF(x, local=TRUE)
+lload_DVF <- function(x, rep="rda") {
+  load_DVF(x, rep, local=TRUE)
 }
 # lorsque le tiblle contient une géometry (sf) select garde la géométrie t_select l'oublie
 
@@ -132,30 +132,51 @@ selectt <- function(.data, ...) {
     dplyr::select(...)
 }
 
-graph2svg <- function(graph, file, height = 16, width = 20, textratio = 2) {
-  env <- parent.frame()
-  file <- glue::glue(file, .envir = env)
-  svglite::svglite(file = stringr::str_c(file, ".svg"), height = height, width = width, pointsize = 9)
-  print(graph, vp = grid::viewport(gp = grid::gpar(cex = textratio)))
-  invisible(dev.off())
+# graph2svg <- function(graph, file, height = 16, width = 20, textratio = 2) {
+#   env <- parent.frame()
+#   file <- glue::glue(file, .envir = env)
+#   svglite::svglite(file = stringr::str_c(file, ".svg"), height = height, width = width, pointsize = 9)
+#   print(graph, vp = grid::viewport(gp = grid::gpar(cex = textratio)))
+#   invisible(dev.off())
+# }
+
+make_filename <- function(x, file="", rep="", env, ext)
+{
+  if(file=="") {
+    file <- x
+  }
+  else
+    file <- glue::glue(file, .envir = env)
+  if(rep!="")
+    rep <- str_c(glue::glue(rep, .envir = env), "/")
+  str_c(rep, file, ".", ext)
 }
 
-graph2jpg <- function(graph, file, height = 2160, width = 3840) {
-  env <- parent.frame()
-  file <- glue::glue(file, .envir = env)
-  grDevices::jpeg(file = str_c(file, ".jpg"), height = height, width = width, res = 300)
-  print(graph)
-  dev.off()
+graph2svg <- function(graph, file="", rep="{localdata}/svg", height = 17, width = 25, units="cm")
+{
+  fn <- make_filename(as_name(enquo(graph)), file, rep, parent.frame(), "svg")
+  cl <- case_when(
+    "gg" %in% class(graph) ~ "gg",
+    "tmap" %in% class(graph) ~ "tmap", 
+    TRUE ~ "err")
+  switch(cl,
+         gg = ggsave(filename=fn, plot=graph, height = height, width = width, units=units),
+         tmap = tmap_save(filename=fn, tm=graph, height = height, width = width, units=units),
+         err = message("save not implemented"))
 }
 
-graph2pdf <- function(graph, file, height = 8, width = 10) {
-  env <- parent.frame()
-  file <- glue::glue(file, .envir = env)
-  grDevices::pdf(file = str_c(file, ".pdf"), height = height, width = width)
-  print(graph)
-  dev.off()
+graph2jpg <- function(graph, file="", rep="{localdata}/svg", height = 17, width = 25, units="cm")
+{
+  fn <- make_filename(as_name(enquo(graph)), file, rep, parent.frame(), "jpg")
+  cl <- case_when(
+    "gg" %in% class(graph) ~ "gg",
+    "tmap" %in% class(graph) ~ "tmap", 
+    TRUE ~ "err")
+  switch(cl,
+         gg = ggsave(filename=fn, plot=graph, height = height, width = width, units=units),
+         tmap = tmap_save(filename=fn, tm=graph, height = height, width = width, units=units),
+         err = message("save not implemented"))
 }
-
 
 basecol <- function(i, max = 3) {
   scales::hue_pal()(max)[[i]]
@@ -311,7 +332,7 @@ f2si2 <- function(number, rounding = TRUE, digits = 1, unit = "median") {
     "y", "z", "a", "f", "p", "n", "u", "m", "", "k",
     "M", "G", "T", "P", "E", "Z", "Y"
   )
-  ix <- findInterval(number, lut)
+  ix <- ifelse(number!=0, findInterval(number, lut) , 9L)
   ix <- switch(unit,
     median = median(ix, na.rm = TRUE),
     max = max(ix, na.rm = TRUE),
@@ -418,4 +439,9 @@ apply_consistent_y_lims <- function(this_plot) {
   else {
     this_plot
   }
+}
+
+normalize <- function(x, na.rm=TRUE) 
+{
+  (x - mean(x, na.rm=na.rm))/sd(x, na.rm=na.rm)
 }

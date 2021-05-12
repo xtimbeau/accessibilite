@@ -7,7 +7,7 @@ options(java.parameters =c("-Xmx32G"))
 gc()
 
 dvfpackages <- c(
-  "raster", "sf", "tmap",
+  "raster", "sf", "tmap", "vroom",
   "patchwork", "extrafont", "colorspace",
   "microbenchmark", "tictoc", "profvis",
   "skimr", "furrr", "data.table", "lobstr",
@@ -85,7 +85,7 @@ if (GD == "") GD <- "G:/Mon Drive"
 DVFdata <- "{GD}/DVFdata" %>% glue()
 # répertoire local
 localdata <- "{LD}/DVF" %>% glue()
-fdc851 <- load_DVF("uu851")
+# fdc851 <- lload_DVF("uu851")
 
 progressr::handlers(global = TRUE)
 progressr::handlers(progressr::handler_progress(format = ":bar :percent :eta", width = 80))

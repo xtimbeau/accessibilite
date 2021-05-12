@@ -183,15 +183,19 @@ StatMasso <- ggplot2::ggproto(
       mutate(
         x_cutted = x_cutted,
         x = params$labels_x[x_cutted],
-        dx = params$delta_x[x_cutted])
+        dx = params$delta_x[x_cutted],
+        gm = sum(mass)) %>%
+      group_by(PANEL, group) %>% 
+      mutate(ggm=sum(mass, na.rm=TRUE)) %>% 
+      ungroup()
     return(data)
   },
   compute_group = function(data, scales, na.rm = FALSE, probs, trans, labels_x, delta_x) {
-    compute_masso(data$x, data$mass, data$dx, trans = trans, labels_x=labels_x, delta_x=delta_x)
+    compute_masso(data$x, data$mass, data$dx, data$ggm, trans = trans, labels_x=labels_x, delta_x=delta_x)
   }
 )
 
-compute_masso <- function(x, y, dx, trans=FALSE, labels_x, delta_x) {
+compute_masso <- function(x, y, dx, ggm, trans=FALSE, labels_x, delta_x) {
   data <- data.table(x = x, y = y, dx = dx)
   data <- merge(data, data.table(x=labels_x, dx=delta_x), by=c("x", "dx"), all.x=TRUE, all.y=TRUE, sort=TRUE)
   data[is.na(y), y:=0]
@@ -206,7 +210,7 @@ compute_masso <- function(x, y, dx, trans=FALSE, labels_x, delta_x) {
                        dx=first(dx),
                        ydx=first(ydx)), by=x]
   setorder(quansity1, x)
-  quansity1[, sum := sum_gross/ydx][, cumsum := cumsum(sum)]
-  quansity1[, `:=`(ymax=sum, ymin=0)]
+  quansity1[, sum := sum_gross/ydx][, cumsum := cumsum(sum_gross)]
+  quansity1[, `:=`(ymax=sum, ymin=0, groupmass = sum(sum_gross), grossgroupmass = ggm[[1]])]
   as_tibble(quansity1)
 }
