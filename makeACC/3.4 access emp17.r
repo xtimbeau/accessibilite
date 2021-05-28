@@ -72,7 +72,7 @@ tr_r5_e17_dvfv5 <- iso_accessibilite(
   dir="{localdata}/trr5dvfv5e17" %>% glue,
   out="data.table")
 
-save_DVF(tr_r5_e17_dvfv5)
+save_DVF(tr_r5_e17_dvfv5, local=FALSE)
 
 tr_r5_e09_dvfv5 <- iso_accessibilite(
   quoi=opp09,            
