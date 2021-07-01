@@ -42,7 +42,7 @@ rastervar <-
         dplyr::transmute(!!rlang::quo_name(.x) := !!.x)})
 
     data.table::setDT(data.temp)
-    vars <- set_names(names(data.temp))
+    vars <- rlang::set_names(names(data.temp))
     isnum <- purrr::map_lgl(data.temp, is.numeric)
     data.temp <- data.temp[, lapply(.SD, factor2num)]
     obs_na <- purrr::map(data.temp, ~is.na(.x))

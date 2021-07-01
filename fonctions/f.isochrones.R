@@ -410,7 +410,7 @@ kernel_isochronique <- function (sf, positions, param, res_fac=1L, progress=FALS
     if (isos$errorId == "OK") 
     {
       i_sf <- isos$response %>% st_transform(3035)
-      i_geom <- set_names(i_sf$geometry %>% unclass, str_c(isos$response$time))
+      i_geom <- rlang::set_names(i_sf$geometry %>% unclass, str_c(isos$response$time))
       i_geom <- map(i_geom, ~
                       if (st_is_empty(.)) 
                       {(st_point(x=c(une_pos$X, une_pos$Y)) %>%

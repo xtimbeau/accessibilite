@@ -428,10 +428,10 @@ iso_split_ou <- function(ou, quoi, chunk=NULL, routing, tmax=60)
     
     out_ou <- ou
     out_ou[, `:=`(gr=idINS)]
-    ou_gr <- set_names(as.character(unique(out_ou$gr)))
+    ou_gr <- rlang::set_names(as.character(unique(out_ou$gr)))
   }
   Nous <- out_ou[, .N, by=gr]
-  Nous <- set_names(Nous$N, Nous$gr)
+  Nous <- rlang::set_names(Nous$N, Nous$gr)
   log_success("taille:{f2si2(size)} gr:{f2si2(ngr)} res_gr:{resolution}")
   list(ou=out_ou, ou_gr=ou_gr, resINS=resolution, subsampling=subsampling, Nous=Nous)
 }
