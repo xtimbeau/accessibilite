@@ -1,5 +1,5 @@
-utils::remove.packages('r5r')
-devtools::install_github("ipeaGIT/r5r", subdir = "r-package")
+# utils::remove.packages('r5r')
+# devtools::install_github("ipeaGIT/r5r", subdir = "r-package")
 
 # test f.accessibilite R5.r ----------------
 

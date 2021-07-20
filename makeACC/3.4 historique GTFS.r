@@ -1,9 +1,9 @@
 source("init.r")
 # init ----------------------
 plan(sequential)
-c200 <- load_DVF("c200") %>% st_transform(3035)
-iris15 <- load_DVF("iris15")
-idfplus20 <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(20000) %>% st_union
+c200 <- load_DVF("c200", local=TRUE) %>% st_transform(3035)
+iris15 <- load_DVF("iris15", local=TRUE)
+idfplus20 <- iris15 %>% filter(UU2010=="00851") %>% st_buffer(20000) %>% st_union()
 uu851 <- iris15 %>% filter(UU2010=="00851") %>% st_union
 iris15_idf <- iris15 %>% filter(st_within(., idfplus20, sparse=FALSE))
 c200_idf <- c200 %>% filter(st_within(., uu851, sparse=FALSE))
@@ -13,7 +13,7 @@ c200_idf10k <- c200 %>% filter(st_within(., st_buffer(uu851, 10000), sparse=FALS
 opp <- iris15_idf %>% transmute(EMP09, P15_POP, cste=1) %>% st_centroid()
 
 total_opp <- opp %>% st_drop_geometry() %>%  summarize(EMP09=sum(EMP09), P15_POP=sum(P15_POP), cste=sum(cste))
-threads <- 12
+threads <- 4
 
 # c200idf10k <- st_join(x=c200_idf10k, y=iris15 %>% select(CODE_IRIS, P15_POP), join=st_intersects, largest=TRUE)
 # iris2 <- c200idf10k %>% group_by(CODE_IRIS) %>% summarize(pop=first(P15_POP), ind=sum(Ind))
@@ -40,7 +40,7 @@ tr_r550_2020 <- iso_accessibilite(
   routing=r5_20, 
   dir="{localdata}/trr550_2020" %>% glue)
 
-save_DVF(tr_r550_2020, local=FALSE)
+save_DVF(tr_r550_2020, local=TRUE)
 
 # GPE (50m&200m) ----------------------
 

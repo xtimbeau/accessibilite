@@ -3,7 +3,7 @@ message("Packages")
 # packages utilisés
 
 options("rgdal_show_exportToProj4_warnings" = "none")
-options(java.parameters =c("-Xmx32G"))
+options(java.parameters =c("-Xmx16G"))
 gc()
 
 dvfpackages <- c(

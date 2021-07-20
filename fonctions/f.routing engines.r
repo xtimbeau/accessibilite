@@ -43,7 +43,7 @@ r5_ttm <- function(o, d, tmax, routing)
   library("r5r", quietly=TRUE)
   o <- o[, .(id=as.character(id),lon,lat)]
   d <- d[, .(id=as.character(id),lon,lat)]
-  safe_ttm <- purrr::safely(travel_time_matrix_c)
+  safe_ttm <- purrr::safely(travel_time_matrix)
   
   res <- safe_ttm(
     r5r_core = routing$core,
@@ -59,8 +59,7 @@ r5_ttm <- function(o, d, tmax, routing)
     bike_speed = routing$bike_speed,
     max_rides = routing$max_rides,
     n_threads = routing$n_threads,
-    verbose=FALSE, 
-    draws = routing$montecarlo)
+    verbose=FALSE)
   
   if(!is.null(res$error))
   {
