@@ -30,7 +30,7 @@ r5_20 <- routing_setup_r5(
   time_window=60,
   montecarlo = 30, 
   percentiles = 5L,
-  n_threads = 8)
+  n_threads = threads)
 
 tr_r550_2020 <- iso_accessibilite(
   quoi=opp,            

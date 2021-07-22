@@ -38,14 +38,25 @@ delayRouting <- function(delay, routing)
          "data.table"= {routing}) # à faire
 }
 
+safe_r5_ttm <- purrr::safely(function(r5r_core, origins, destinations, mode,departure_datetime, max_walk_dist, max_trip_duration,
+                                      time_window, percentiles, walk_speed,
+                                      bike_speed, max_rides, n_threads, verbose) {
+  capture.output({r <- travel_time_matrix(r5r_core, origins, destinations, mode,departure_datetime, max_walk_dist, max_trip_duration,
+                                          time_window, percentiles, walk_speed,
+                                          bike_speed, max_rides, n_threads, verbose)},
+                 file="output.txt",
+                 type=c("message", "output"),
+                 split=FALSE)
+  r
+})
+  
 r5_ttm <- function(o, d, tmax, routing)
 {
   library("r5r", quietly=TRUE)
   o <- o[, .(id=as.character(id),lon,lat)]
   d <- d[, .(id=as.character(id),lon,lat)]
-  safe_ttm <- purrr::safely(travel_time_matrix)
   
-  res <- safe_ttm(
+   res <- safe_r5_ttm(
     r5r_core = routing$core,
     origins = o,
     destinations = d,
@@ -60,11 +71,10 @@ r5_ttm <- function(o, d, tmax, routing)
     max_rides = routing$max_rides,
     n_threads = routing$n_threads,
     verbose=FALSE)
-  
   if(!is.null(res$error))
   {
     gc()
-    res <- safe_ttm(
+    res <- safe_r5_ttm(
       r5r_core = routing$core,
       origins = o,
       destinations = d,
