@@ -38,7 +38,7 @@ tr_r550_2020 <- iso_accessibilite(
   resolution=50,      
   tmax=120,              
   routing=r5_20, 
-  dir="{localdata}/trr550_2020" %>% glue)
+  dir="{localdata}/trr550_2020_test" %>% glue)
 
 save_DVF(tr_r550_2020, local=TRUE)
 
