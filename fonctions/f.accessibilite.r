@@ -11,8 +11,8 @@ iso_accessibilite <- function(
   routing,                         # défini le moteur de routage
   tmax=10L,                        # en minutes
   pdt=1L,
-  chunk=5000000,                   # paquet envoyé
-  future=TRUE,                  
+  chunk=50000000,                   # paquet envoyé
+  future=FALSE,                  
   out=ifelse(is.finite(resolution), resolution, "raster"),
   ttm_out= FALSE, 
   logs = localdata,
@@ -128,19 +128,41 @@ iso_accessibilite <- function(
         rrouting <- get_routing(routing, g)
         access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
       },
-      .options=furrr::furrr_options(seed=TRUE, 
-                                      packages=c("data.table", "logger", "stringr", "glue"),
-                                      scheduling = 1))
+      .options=furrr::furrr_options(seed=TRUE, stdout=FALSE, packages=c("data.table", "logger", "stringr", "glue")))
   }
   else
   {
+    if(!future) {
     pids <- future:::session_uuid()[[1]]
     access <- purrr::map(ou_gr, function(g) {
       pb(amount=groupes$Nous[[g]])
       rrouting <- get_routing(routing, g)
       access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
     })
-  }
+    }
+    if(future&!is.null(routing$core_init)) {
+      pl <- future::plan()
+      future::plan(pl)
+      pids <- furrr::future_map(
+        1:(future::nbrOfWorkers()), 
+        ~future:::session_uuid()[[1]])
+      lt <- log_threshold()
+      nw <- future::nbrOfWorkers()
+      splittage <- seq(0,length(ou_gr)-1) %/% ceiling(length(ou_gr)/nw)
+      workable_ous <- split(ou_gr, splittage)
+      access <- furrr::future_map(workable_ous, function(gs) {
+        log_threshold(lt)
+        log_appender(logger::appender_file(logfile))
+        routing$core <- routing$core_init(routing)
+        map(gs, function(g) {
+          pb(amount=groupes$Nous[[g]])
+          rrouting <- get_routing(routing, g)
+          access_on_groupe(g, ou_4326, quoi_4326, rrouting, k, tmax, opp_var, ttm_out, pids, dir, t2d=table2disk)
+        })
+      }, .options=furrr::furrr_options(seed=TRUE, stdout=FALSE, packages=c("data.table", "logger", "stringr", "glue", "r5r", "rJava"))) |> 
+        flatten()
+    }
+    }
   
   access <- data.table::rbindlist(access)
 

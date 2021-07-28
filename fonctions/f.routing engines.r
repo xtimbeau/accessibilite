@@ -247,7 +247,8 @@ routing_setup_r5 <- function(path,
                              walk_speed = 5.0,
                              bike_speed = 12.0,
                              max_rides= 5L,
-                             n_threads= parallel::detectCores(logical=FALSE))
+                             n_threads= 4L,
+                             jMem = "12G")
 {
   library("r5r", quietly=TRUE)
   env <- parent.frame()
@@ -260,6 +261,7 @@ routing_setup_r5 <- function(path,
   mtnt <- lubridate::now()
   list(
     type = "r5",
+    path= path,
     string=glue::glue("r5 routing {mode_string} sur {path} à {mtnt}"),
     core = core,
     montecarlo = as.integer(montecarlo),
@@ -272,7 +274,18 @@ routing_setup_r5 <- function(path,
     bike_speed=bike_speed,
     max_rides=max_rides,
     n_threads=as.integer(n_threads),
-    future=FALSE)
+    future=FALSE, 
+    jMem = jMem,
+    core_init = function(routing){
+      options(java.parameters = glue('-Xmx{routing$jMem}'))
+      rJava::.jinit()
+      library(r5r)
+      r5r::stop_r5()
+      rJava::.jgc(R.gc = TRUE)
+      core <- r5r::setup_r5(data_path = routing$path, verbose=FALSE)
+      core$setNumberOfMonteCarloDraws(routing$montecarlo)
+      core
+    })
 }
 
 getr5datafromAzFS <- function(jeton_sas, path="IDFM", endpoint="https://totostor.file.core.windows.net")
