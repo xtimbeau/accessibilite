@@ -11,3 +11,4 @@ rosm.cache
 renv/
 data/
 C:
+*.rda

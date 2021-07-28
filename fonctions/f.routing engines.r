@@ -38,7 +38,7 @@ delayRouting <- function(delay, routing)
          "data.table"= {routing}) # à faire
 }
 
-safe_r5_ttm <- purrr::safely(travel_time_matrix)
+safe_r5_ttm <- purrr::safely(r5r::travel_time_matrix)
 quiet_r5_ttm <- function(...) {
   capture.output(r <- safe_r5_ttm(...), file="output.txt",type=c("output", "message"), split = FALSE, append = TRUE)
   r

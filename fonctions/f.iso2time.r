@@ -17,7 +17,7 @@ iso2time <- function(isoraster, seuils=median(raster::cellStats(isoraster, media
 {
   checkmate::assert(checkmate::checkMultiClass(isoraster, c("RasterLayer", "RasterBrick", "RasterStack")))
   seuils <- unique(seuils)
-  isotimes <- names(isoraster) %>%
+ isotimes <- names(isoraster) %>%
     stringr::str_extract("[:digit:]+") %>%
     as.numeric()
   mm <- isoraster %>%
