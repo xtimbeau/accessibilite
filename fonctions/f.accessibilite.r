@@ -249,7 +249,7 @@ iso_accessibilite <- function(
             r_xy <- data.table::dcast(access_c, fromId~temps, value.var=v)
             names(r_xy) <- c("fromId", ttn)
             r_xy <- merge(r_xy, ids, by="fromId")[, fromId:=NULL]
-            dt2r(r_xy, resolution=outr)
+            readAll(dt2r(r_xy, resolution=outr))
           })})
       dtime <- as.numeric(Sys.time()) - as.numeric(start_time)  
       red <- 100*(npaires_brut-npaires)/npaires_brut
